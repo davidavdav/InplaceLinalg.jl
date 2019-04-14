@@ -1,5 +1,7 @@
 # InplaceLinalg.jl
 
+[![Build Status](https://travis-ci.org/davidavdav/InplaceLinalg.jl.svg?branch=master)](https://travis-ci.org/davidavdav/InplaceLinalg.jl)
+
 This is a small macro package for Julia to make it somewhat easier to write in-place matrix arithmetic. 
 
 ## Install
@@ -44,6 +46,13 @@ using InplaceLinalg
 @inplace C += A * B'
 @inplace C = A' * B'
 @inplace C += A' * B'
+
+## The following examples should also work for `+=` and transpositions of A and B
+@inplace C = 2 * A * B
+@inplace C = 2.0 * A * B 
+@inplace C = 2.0f0 * A * B
+@inplace C = 2.0 * π * A * B
+@inplace C = 2π * A * B
 ```
 and these will be translated to calls to `gemm!()` with the correct options for the transposition character arguments and factor β. 
 
@@ -53,6 +62,6 @@ Because the way the macro works, parenthesized expressions can be used for `A` a
 
  - Currenlty the macro expansion assumes expressions `A` and `B` are both matirices (of compatible size), and therefore always returns a call to `gemm!()`.  However, `gemm!()` appears to be generic enough to be able to deal with either `A` or `B` to be vectors if `C` is an `Array` of the appropriate dimension. 
 
-- Expressions like `@inplace C = 2 * A * B` are not yet supported. 
+- Expressions like `C = 2A * B` are memory-inefficient, because of the way this is parsed by julia
 
 - Other BLAS functions like `scal!()`, `ger!()` etc. are not yet supported.  

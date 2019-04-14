@@ -10,11 +10,18 @@ end
 
 function inplace(e::Expr)
     ## dump(e)
-    if e.head in [:(=), :(+=)] && isa(e.args[1], Symbol) && isa(e.args[2], Expr) && e.args[2].head == :call && e.args[2].args[1] == :*
-        tr1, arg1 = trans(e.args[2].args[2])
-        tr2, arg2 = trans(e.args[2].args[3])
-        beta = float(e.head == :(+=))
-        return :(BLAS.gemm!($tr1, $tr2, 1.0, $arg1, $arg2, $beta, $(e.args[1])))
+    if e.head in [:(=), :(+=)] && isa(e.args[1], Symbol) 
+        rhs = e.args[2]
+        if isa(rhs, Expr) && rhs.head == :call && rhs.args[1] == :*
+            tr2, arg2 = trans(pop!(rhs.args))
+            tr1, arg1 = trans(pop!(rhs.args))
+            call = popfirst!(rhs.args) ##  * 
+            nfactors = length(rhs.args)
+            alpha = nfactors == 0 ? :(one(eltype($arg1))) : 
+                nfactors == 1 ? :(convert(eltype($arg1), $(rhs.args[1]))) : :(convert(eltype($arg1), prod($(rhs.args))))
+            beta = e.head == :(+=) ? :(one(eltype($arg1))) : :(zero(eltype($arg1)))
+            return :(BLAS.gemm!($tr1, $tr2, $alpha, $arg1, $arg2, $beta, $(e.args[1])))
+        end
     end
     return e
 end
