@@ -54,14 +54,24 @@ using InplaceLinalg
 @inplace C = 2.0 * π * A * B
 @inplace C = 2π * A * B
 ```
-and these will be translated to calls to `gemm!()` with the correct options for the transposition character arguments and factor β. 
+and these will be translated to calls to `gemm!(At, BT, α, A, B, β, C)` with the correct options for the transposition characters `AT`, `BT`, arguments `A`, `B`, `C` and factors `α`, `β`. 
 
-Because the way the macro works, parenthesized expressions can be used for `A` and `B` as well, but of course these expressions will themselves allocate memory, defeating the purpose of this macro a bit.
+Because the way the macro works, parenthesized expressions can be used for `A` and `B` as well, but of course these expressions will themselves allocate memory, defeating the purpose of this macro a little.
+
+## Array scaling
+
+You can scale a dense matrix (of any dimension) using the syntax 
+```
+@inplace C *= factor
+```
+which will be translated to a call to `scal!(length(C), factor, C, 1)`. 
 
 ## Limitations
 
- - Currenlty the macro expansion assumes expressions `A` and `B` are both matirices (of compatible size), and therefore always returns a call to `gemm!()`.  However, `gemm!()` appears to be generic enough to be able to deal with either `A` or `B` to be vectors if `C` is an `Array` of the appropriate dimension. 
+ - Currenlty the macro expansion assumes expressions `A` and `B` are both matrices (of compatible size), and therefore always returns a call to `gemm!()`.  However, `gemm!()` appears to be generic enough to be able to deal with either `A` or `B` to be vectors if `C` is an `Array` of the appropriate dimension. 
 
-- Expressions like `C = 2A * B` are memory-inefficient, because of the way this is parsed by julia
+- Expressions like `C = 2A * B` are memory-inefficient, because of the way this expression is parsed by julia as `C = (2*A) * B`
 
-- Other BLAS functions like `scal!()`, `ger!()` etc. are not yet supported.  
+- LHS indexing like `C[2:2:end] *= -1` is not supported yet
+
+- Other BLAS functions like `ger!()` etc. are not yet supported.  

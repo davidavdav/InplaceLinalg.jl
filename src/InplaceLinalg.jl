@@ -22,6 +22,10 @@ function inplace(e::Expr)
             beta = e.head == :(+=) ? :(one(eltype($arg1))) : :(zero(eltype($arg1)))
             return :(BLAS.gemm!($tr1, $tr2, $alpha, $arg1, $arg2, $beta, $(e.args[1])))
         end
+    elseif e.head == :(*=) && isa(e.args[1], Symbol)
+        lhs = e.args[1]
+        factor = :(convert(eltype($lhs), $(e.args[2])))
+        return :(BLAS.scal!(length($lhs), $factor, $lhs, 1))
     end
     return e
 end
