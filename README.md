@@ -66,6 +66,22 @@ You can scale a dense matrix (of any dimension) using the syntax
 ```
 which will be translated to a call to `scal!(length(C), factor, C, 1)`. 
 
+## Array copying
+
+You can copy the contents of one matrix to another of the same size using the syntax
+```
+@inplace C = D
+```
+which will be translated to a call to `blascopy!(length(D), D, 1, C, 1)`. 
+
+## In-place addition
+
+You can add a matrix to another matrix in-place using the syntax
+```julia
+@inplace C += D
+```
+which will be  translated to a call to `axpy!(1.0, D, C)`.  Currently, we don't have a way to handle handle scalar multiplication of `D`, because the syntax is already "claimed" by the matrix-matrix multiplication. 
+
 ## Limitations
 
  - Currenlty the macro expansion assumes expressions `A` and `B` are both matrices (of compatible size), and therefore always returns a call to `gemm!()`.  However, `gemm!()` appears to be generic enough to be able to deal with either `A` or `B` to be vectors if `C` is an `Array` of the appropriate dimension. 

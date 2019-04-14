@@ -7,14 +7,14 @@ B = randn(200, 100)
 C = zeros(100, 100)
 C1 = A * B
 
-## Basic matrix multiplication
+## Basic matrix multiplication, gemm!()
 @time @inplace C = A * B
 @test C == C1
 
 @time @inplace C += A * B
 @test C == 2C1
 
-## With scaling factor
+## With scaling factor 
 @time @inplace C = 3.0 * A * B
 @test C ≈ 3C1
 
@@ -47,9 +47,18 @@ At = collect(A')
 @time @inplace C += At' * Bt'
 @test C == 2C1
 
-## scaling
+## scaling scal!()
 @time @inplace C *= 2
 @test C ≈ 4C1
 
 @time @inplace C *= π
 @test C ≈ 4π * C1
+
+## copy blascopy!()
+@inplace C *= 0
+@time @inplace C = C1
+@test C == C1
+
+## simple in-place add sxpy!()
+@time @inplace C += C1
+@test C == 2C1
