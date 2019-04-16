@@ -11,19 +11,39 @@ end
 function inplace(expr::Expr) 
     if expr.head in [:(=), :(+=)] && isa(expr.args[1], Symbol)
         lhs, rhs = expr.args
-        if isa(rhs, Expr) && rhs.head == :call && length(rhs.args) ≥ 3 && rhs.args[1] == :* 
-            B = pop!(rhs.args)
-            A = pop!(rhs.args)
-            alpha = InplaceLinalg.factor(rhs)
-            beta = Int(expr.head == :(+=))
-            return :(InplaceLinalg.C_AB!($lhs, $beta, $alpha, $A, $B))
+        if isa(rhs, Expr) && rhs.head == :call && length(rhs.args) ≥ 3 
+            if rhs.args[1] == :* 
+                B = pop!(rhs.args)
+                A = pop!(rhs.args)
+                alpha = InplaceLinalg.factor(rhs)
+                beta = Int(expr.head == :(+=))
+                return :(InplaceLinalg.C_AB!($lhs, $beta, $alpha, $A, $B))
+            elseif rhs.args[1] == :+ && length(rhs.args) == 3
+                term1, term2 = rhs.args[2:3]
+                beta, C = InplaceLinalg.firstTerm(term1)
+                @assert lhs == C "First term must be linear in the LHS"
+                if isa(term2, Expr) && term2.head == :call && length(term2.args) ≥ 3 && term2.args[1] == :*
+                    B = pop!(term2.args)
+                    A = pop!(term2.args)
+                    alpha = InplaceLinalg.factor(term2)
+                    return :(InplaceLinalg.C_AB!($lhs, $beta, $alpha, $A, $B))
+                end
+            end
         end 
     end
+    error("Unsupported expression")
+end
+
+firstTerm(term::Symbol) = 1, term
+function firstTerm(term::Expr) 
+    @assert term.head == :call && length(term.args) ≥ 3 && term.args[1] == :* "First term must be simple multiplication"
+    return term.args[2], term.args[3]
 end
 
 function factor(expr::Expr)
     nfactors = length(expr.args) - 1
     nfactors == 0 && return 1
+    nfactors == 1 && return expr.args[2]
     return expr
 end
 
