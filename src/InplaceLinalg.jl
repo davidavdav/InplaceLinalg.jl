@@ -37,7 +37,7 @@ function inplace(expr::Expr)
         else
             return :($lhs .= $B)
         end
-    elseif (β, α, typeof(A)) == (0, 1, Expr)
+    elseif (β, α, typeof(A)) == (0, 1, Expr) && A.args[1] == :\
         _, α, div, A = quotient(A)
         return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
     end

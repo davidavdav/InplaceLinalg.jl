@@ -30,7 +30,6 @@ using Test
 @macroexpand @inplace C = A \ 2π * B        == :(InplaceLinalg.C_div(C, 2π, B, \, A))
 ## can't do @macroexpand @inplace B = A \ 2 * π * B yet...
 
-if false
 A = randn(100, 200)
 B = randn(200, 100)
 
@@ -40,6 +39,7 @@ C1 = A * B
 ## Basic matrix multiplication, gemm!()
 @time @inplace C = A * B
 @test C == C1
+
 
 @time @inplace C += A * B
 @test C == 2C1
@@ -76,6 +76,8 @@ At = collect(A')
 
 @time @inplace C += At' * Bt'
 @test C == 2C1
+
+if false
 
 ## scaling scal!()
 @time @inplace C *= 2
