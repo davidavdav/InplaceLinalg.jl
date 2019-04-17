@@ -59,17 +59,22 @@ function terms(expr::Expr)
 end
 terms(x) = 0, x
 
-function factors(expr::Expr)
-    if expr.head == :call && length(expr.args) ≥ 3 && expr.args[1] == :*
+function factors(expr::Expr, min=3)
+    if expr.head == :call && length(expr.args) ≥ min && expr.args[1] == :*
         B = pop!(expr.args)
         A = pop!(expr.args)
+        _, a, A = factors(A, 2)
+        _, b, B = factors(B, 2)
+        for f in [a, b]
+            f != 1 && push!(expr.args, f)
+        end
         alpha = InplaceLinalg.factor(expr)
         return alpha, A, B
     else
         return 1, 1, expr
     end
 end
-factors(x) = 1, 1, x
+factors(x, min=3) = 1, 1, x
 
 
 function factor(expr::Expr)
@@ -99,7 +104,8 @@ function quotient(expr::Expr)
         else
             if expr.args[1] == :\
                 den, num = expr.args[2:3]
-                return 1, num, \, den
+                _, α, num = factors(num, 2)
+                return α, num, \, den
             end
         end
     end

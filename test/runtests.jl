@@ -3,6 +3,10 @@ using Test
 
 @macroexpand @inplace C = A * B             == :(InplaceLinalg.C_AB!(C, 0, 1, A, B))
 @macroexpand @inplace C = α * A * B         == :(InplaceLinalg.C_AB!(C, 0, α, A, B))
+@macroexpand @inplace C = A * 7B            == :(InplaceLinalg.C_AB!(C, 0, 7, A, B))
+@macroexpand @inplace C = 3A * B            == :(InplaceLinalg.C_AB!(C, 0, 3, A, B))
+@macroexpand @inplace C = 3A * 7B           == :(InplaceLinalg.C_AB!(C, 0, 3 * 7, A, B))
+
 @macroexpand @inplace C = C + α * A * B     == :(InplaceLinalg.C_AB!(C, 1, α, A, B))
 @macroexpand @inplace C = β * C + α * A * B == :(InplaceLinalg.C_AB!(C, β, α, A, B))
 @macroexpand @inplace C = β * C + 2π * A * B == :(InplaceLinalg.C_AB!(C, β, 2π, A, B))
@@ -22,10 +26,12 @@ using Test
 @macroexpand @inplace C -= 2.5C + 2exp(1) * A * B == :(InplaceLinalg.C_AB!(C, -1.5, -(2 * exp(1)), A, B))
 
 @macroexpand @inplace C = B / A             == :(InplaceLinalg.C_div(C, 1, B, /, A))
+@macroexpand @inplace C = 2B / A            == :(InplaceLinalg.C_div(C, 2, B, /, A))
 @macroexpand @inplace C = α * B / A         == :(InplaceLinalg.C_div(C, α, B, /, A))
 @macroexpand @inplace C = 2π * B / A        == :(InplaceLinalg.C_div(C, 2π, B, /, A))
 @macroexpand @inplace C = 2*π * B / A       == :(InplaceLinalg.C_div(C, 2π, B, /, A))
 @macroexpand @inplace C = A \ B             == :(InplaceLinalg.C_div(C, 1, B, \, A))
+@macroexpand @inplace C = A \ 2B            == :(InplaceLinalg.C_div(C, 2, B, \, A))
 @macroexpand @inplace C = A \ α * B         == :(InplaceLinalg.C_div(C, α, B, \, A))
 @macroexpand @inplace C = A \ 2π * B        == :(InplaceLinalg.C_div(C, 2π, B, \, A))
 ## can't do @macroexpand @inplace B = A \ 2 * π * B yet...
