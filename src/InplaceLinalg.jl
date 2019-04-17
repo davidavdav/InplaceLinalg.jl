@@ -14,7 +14,10 @@ function inplace(expr::Expr)
     lhs, ass, rhs = assignment(expr);
     term1, term2 = terms(rhs)
     if term1 != 0
-        a, β, C = factors(term1)
+        α, β, C = factors(term1)
+        if α != 1
+            β = :($α * $β)
+        end
         @assert lhs == C "First term must be linear in the LHS" lhs C
     else 
         β = 0
@@ -26,11 +29,23 @@ function inplace(expr::Expr)
     if ass == :(-=)
         α = negate(α)
     end
+    if (β, α, A) == (0, 1, 1)
+        α, B, div, A = quotient(B)
+        if (div != nothing)
+            return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
+        else
+            return :($lhs .= $B)
+        end
+    elseif (β, α, typeof(A)) == (0, 1, Expr)
+        _, α, div, A = quotient(A)
+        return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
+    end
     return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
 end
+inplace(x) = x
 
 function assignment(expr::Expr) 
-    @assert expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] "Unknown assignment operator" + string(expr.head)
+    @assert expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] "Unknown assignment operator " * string(expr)
     return expr.args[1], expr.head, expr.args[2]
 end
 
