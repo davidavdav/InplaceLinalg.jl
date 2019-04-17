@@ -33,13 +33,13 @@ function inplace(expr::Expr)
     if (β, α, A) == (0, 1, 1)
         α, B, div, A = quotient(B)
         if (div != nothing)
-            return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
+            return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
         else
             return :($lhs .= $B)
         end
     elseif (β, α, typeof(A)) == (0, 1, Expr)
         _, α, div, A = quotient(A)
-        return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
+        return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
     end
     return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
 end
@@ -112,9 +112,9 @@ quotient(x) = 1, x, nothing, nothing
 include("error_handling.jl")
 
 C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
+C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination of types not implemented.")
+
 include("C_AB.jl")
-
-
 include("C_div.jl")
 
 
