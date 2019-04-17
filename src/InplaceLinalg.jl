@@ -1,8 +1,10 @@
 module InplaceLinalg
 
-using LinearAlgebra: BLAS
+using LinearAlgebra
 
-export @inplace, BLAS
+export @inplace,InplaceException
+
+include("declare_types.jl")
 
 macro inplace(x)
     esc(inplace(x))
@@ -69,51 +71,17 @@ dobeta(::Type{Val{:(-=)}}, x) = :(1 - $x)
 negate(x::Number) = -x
 negate(x) = :(-$x)
 
-function C_AB!(C, β, α, A, B)
-    return C, β, α, typeof(A), A, typeof(B), B
-end
+# function C_AB!(C, β, α, A, B)
+#     return C, β, α, typeof(A), A, typeof(B), B
+# end
 
-## Old stuff
+include("error_handling.jl")
 
-function oldinplace(e::Expr)
-    ## dump(e)
-    if e.head in [:(=), :(+=)] && isa(e.args[1], Symbol) 
-        lhs, rhs = e.args
-        if isa(rhs, Expr) && rhs.head == :call && length(rhs.args) ≥ 3 && rhs.args[1] == :* 
-            tr2, arg2 = InplaceLinalg.trans(pop!(rhs.args))
-            tr1, arg1 = InplaceLinalg.trans(pop!(rhs.args))
-            alpha = InplaceLinalg.factor(rhs, arg1)
-            beta = e.head == :(+=) ? :(one(eltype($arg1))) : :(zero(eltype($arg1)))
-            return :(BLAS.gemm!($tr1, $tr2, $alpha, $arg1, $arg2, $beta, $lhs))
-        elseif isa(rhs, Symbol) && e.head == :(=)
-            return :(BLAS.blascopy!(length($rhs), $rhs, 1, $lhs, 1))
-        elseif e.head == :(+=)
-            if isa(rhs, Expr) && rhs.head == :call && rhs.args[1] == :* && isa(rhs.args[end], Symbol)
-                ## this is supposed to catch C += 2 * A, but that is already dispatched above by gemm!()
-                X = pop!(rhs.args)
-                alpha = InplaceLinalg.factor(rhs, X)
-                return :(BLAS.axpy!($alpha, $X, $lhs))
-            else 
-                return :(BLAS.axpy!(one(eltype($lhs)), $rhs, $lhs))
-            end
-        end
-    elseif e.head == :(*=) && isa(e.args[1], Symbol)
-        lhs = e.args[1]
-        factor = :(convert(eltype($lhs), $(e.args[2])))
-        return :(BLAS.scal!(length($lhs), $factor, $lhs, 1))
-    end
-    return e
-end
+C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
 
-trans(expr::Expr) = (expr.head == Symbol("'")) ? ('T', expr.args[1]) : ('N', expr)
-trans(x) = 'N', x
+include("C_AB.jl")
 
-## Evaluate the first factors in a product
-function factor(expr::Expr, array::Symbol) 
-    nfactors = length(expr.args) - 1
-    nfactors == 0 && return :(one(eltype($array)))
-    nfactors == 1 && return :(convert(eltype($array), $(expr.args[2])))
-    return :(convert(eltype($array), $expr))
-end
+
+
 
 end # module
