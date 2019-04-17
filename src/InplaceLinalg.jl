@@ -12,7 +12,10 @@ function inplace(expr::Expr)
     lhs, ass, rhs = assignment(expr);
     term1, term2 = terms(rhs)
     if term1 != 0
-        a, β, C = factors(term1)
+        α, β, C = factors(term1)
+        if α != 1
+            β = :($α * $β)
+        end
         @assert lhs == C "First term must be linear in the LHS" lhs C
     else 
         β = 0
@@ -24,11 +27,23 @@ function inplace(expr::Expr)
     if ass == :(-=)
         α = negate(α)
     end
+    if (β, α, A) == (0, 1, 1)
+        α, B, div, A = quotient(B)
+        if (div != nothing)
+            return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
+        else
+            return :($lhs .= $B)
+        end
+    elseif (β, α, typeof(A)) == (0, 1, Expr)
+        _, α, div, A = quotient(A)
+        return :(InplaceLinalg.C_div($lhs, $α, $B, $div, $A))
+    end
     return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
 end
+inplace(x) = x
 
 function assignment(expr::Expr) 
-    @assert expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] "Unknown assignment operator" + string(expr.head)
+    @assert expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] "Unknown assignment operator " * string(expr)
     return expr.args[1], expr.head, expr.args[2]
 end
 
@@ -69,8 +84,32 @@ dobeta(::Type{Val{:(-=)}}, x) = :(1 - $x)
 negate(x::Number) = -x
 negate(x) = :(-$x)
 
+function quotient(expr::Expr)
+    if expr.head == :call && length(expr.args) == 3
+        if expr.args[1] == :/
+            num, den = expr.args[2:3]
+            γ, α, num = factors(num)
+            if γ != 1
+                α = :($γ * $α)
+            end
+            return α, num, /, den
+        else
+            if expr.args[1] == :\
+                den, num = expr.args[2:3]
+                return 1, num, \, den
+            end
+        end
+    end
+    return 1, expr, nothing, nothing
+end
+quotient(x) = 1, x, nothing, nothing
+
 function C_AB!(C, β, α, A, B)
     return C, β, α, typeof(A), A, typeof(B), B
+end
+
+function C_div!(C, α, B, div, A)
+    return C, typeof(α), α, typeof(B), B, A
 end
 
 ## Old stuff
