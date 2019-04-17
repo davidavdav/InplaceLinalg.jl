@@ -10,17 +10,16 @@ BlasTranspose{T} = Transpose{T,P} where P <: BlasArray{T}
 BlasAdjoint{T} = Adjoint{T,P} where P <: BlasArray{T} 
 BlasRow{T} = Transpose{T,P} where P <: BlasVector{T}
 
-<<<<<<< HEAD
-BlasNode{T,N} = Union{Array{T,N},SubArray{T,N}} where T <:BlasFloat #add more here if needed
+BlasNode{T,N} = Union{Array{T,N}, SubArray{T,N}} where T <:BlasFloat #add more here if needed
 
 TransposeTriangular{T} = Transpose{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
 AdjointTriangular{T} = Adjoint{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
-SimpleTriangular{T} = Union{AbstractTriangular{T},TransposeTriangular{T},AdjointTriangular{T}} where T <: BlasFloat
+SimpleTriangular{T} = Union{AbstractTriangular{T}, TransposeTriangular{T}, AdjointTriangular{T}} where T <: BlasFloat
 #InverseTriangular{T} = Inversion{P} where P <: SimpleTriangular{T} where T <: BlasFloat
-#TransformedTriangular{T} = Union{TransposeTriangular{T},AdjointTriangular{T},InverseTriangular{T}}
-TransformedTriangular{T} = Union{TransposeTriangular{T},AdjointTriangular{T}}
+#TransformedTriangular{T} = Union{TransposeTriangular{T}, AdjointTriangular{T},InverseTriangular{T}}
+TransformedTriangular{T} = Union{TransposeTriangular{T}, AdjointTriangular{T}}
 
-BlasTriangular{T} = Union{AbstractTriangular{T},TransformedTriangular{T},UniformScaling{T}} where T <: BlasFloat 
+BlasTriangular{T} = Union{AbstractTriangular{T}, TransformedTriangular{T}, UniformScaling{T}} where T <: BlasFloat 
 
 transposechar(::AbstractMatrix) = 'N'
 transposechar(::Transpose) = 'T'
@@ -28,9 +27,6 @@ transposechar(::Adjoint{T}) where T <: Real = 'T'
 transposechar(::Adjoint{T}) where T <: Complex = 'C'
 #transposechar(T::InverseTriangular) = transposechar(parent(T))
 
-=======
-BlasNode{T,N} = Union{Array{T,N}, SubArray{T,N}} where T <: BlasFloat # add more here if needed
->>>>>>> 22bf4cd679c99debaded5151e3d15e9d2944c843
 blasnode(M::BlasNode) = M  # it's here
 blasnode(M::TransformedTriangular) = blasnode(parent(M))  
 blasnode(M::BlasArray) = blasnode(parent(M))  # go looking for it deeper down ...
