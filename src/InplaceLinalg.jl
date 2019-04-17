@@ -9,36 +9,50 @@ macro inplace(x)
 end
 
 function inplace(expr::Expr) 
-    if expr.head in [:(=), :(+=)] && isa(expr.args[1], Symbol)
-        lhs, rhs = expr.args
-        if isa(rhs, Expr) && rhs.head == :call && length(rhs.args) ≥ 3 
-            if rhs.args[1] == :* 
-                B = pop!(rhs.args)
-                A = pop!(rhs.args)
-                alpha = InplaceLinalg.factor(rhs)
-                beta = Int(expr.head == :(+=))
-                return :(InplaceLinalg.C_AB!($lhs, $beta, $alpha, $A, $B))
-            elseif rhs.args[1] == :+ && length(rhs.args) == 3
-                term1, term2 = rhs.args[2:3]
-                beta, C = InplaceLinalg.firstTerm(term1)
-                @assert lhs == C "First term must be linear in the LHS"
-                if isa(term2, Expr) && term2.head == :call && length(term2.args) ≥ 3 && term2.args[1] == :*
-                    B = pop!(term2.args)
-                    A = pop!(term2.args)
-                    alpha = InplaceLinalg.factor(term2)
-                    return :(InplaceLinalg.C_AB!($lhs, $beta, $alpha, $A, $B))
-                end
-            end
-        end 
+    lhs, ass, rhs = assignment(expr);
+    term1, term2 = terms(rhs)
+    if term1 != 0
+        a, β, C = factors(term1)
+        @assert lhs == C "First term must be linear in the LHS" lhs C
+    else 
+        β = 0
     end
-    error("Unsupported expression")
+    α, A, B = factors(term2)
+    if ass in [:(+=), :(-=)]
+        β = dobeta(Val{ass}, β)
+    end
+    if ass == :(-=)
+        α = negate(α)
+    end
+    return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
 end
 
-firstTerm(term::Symbol) = 1, term
-function firstTerm(term::Expr) 
-    @assert term.head == :call && length(term.args) ≥ 3 && term.args[1] == :* "First term must be simple multiplication"
-    return term.args[2], term.args[3]
+function assignment(expr::Expr) 
+    @assert expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] "Unknown assignment operator" + string(expr.head)
+    return expr.args[1], expr.head, expr.args[2]
 end
+
+function terms(expr::Expr)
+    if expr.head == :call && length(expr.args) == 3 && expr.args[1] == :+
+        return expr.args[2:3]
+    else
+        return 0, expr
+    end
+end
+terms(x) = 0, x
+
+function factors(expr::Expr)
+    if expr.head == :call && length(expr.args) ≥ 3 && expr.args[1] == :*
+        B = pop!(expr.args)
+        A = pop!(expr.args)
+        alpha = InplaceLinalg.factor(expr)
+        return alpha, A, B
+    else
+        return 1, 1, expr
+    end
+end
+factors(x) = 1, 1, x
+
 
 function factor(expr::Expr)
     nfactors = length(expr.args) - 1
@@ -46,6 +60,14 @@ function factor(expr::Expr)
     nfactors == 1 && return expr.args[2]
     return expr
 end
+
+dobeta(::Type{Val{:(+=)}}, x::Number) = x + 1
+dobeta(::Type{Val{:(-=)}}, x::Number) = (1 - x)
+dobeta(::Type{Val{:(+=)}}, x) = :($x + 1)
+dobeta(::Type{Val{:(-=)}}, x) = :(1 - $x)
+
+negate(x::Number) = -x
+negate(x) = :(-$x)
 
 function C_AB!(C, β, α, A, B)
     return C, β, α, typeof(A), A, typeof(B), B
