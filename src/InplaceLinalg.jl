@@ -11,6 +11,7 @@ macro inplace(x)
 end
 
 function inplace(expr::Expr) 
+    #dump(expr)
     lhs, ass, rhs = assignment(expr);
     term1, term2 = terms(rhs)
     if term1 != 0
@@ -86,16 +87,35 @@ dobeta(::Type{Val{:(-=)}}, x) = :(1 - $x)
 negate(x::Number) = -x
 negate(x) = :(-$x)
 
-# function C_AB!(C, β, α, A, B)
-#     return C, β, α, typeof(A), A, typeof(B), B
-# end
+function quotient(expr::Expr)
+    if expr.head == :call && length(expr.args) == 3
+        if expr.args[1] == :/
+            num, den = expr.args[2:3]
+            γ, α, num = factors(num)
+            if γ != 1
+                α = :($γ * $α)
+            end
+            return α, num, /, den
+        else
+            if expr.args[1] == :\
+                den, num = expr.args[2:3]
+                return 1, num, \, den
+            end
+        end
+    end
+    return 1, expr, nothing, nothing
+end
+quotient(x) = 1, x, nothing, nothing
+
+
 
 include("error_handling.jl")
 
 C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
-
 include("C_AB.jl")
 
+
+include("C_div.jl")
 
 
 
