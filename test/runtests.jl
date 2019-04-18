@@ -36,6 +36,8 @@ using Test
 @macroexpand @inplace C = A \ 2π * B        == :(InplaceLinalg.C_div(C, 2π, B, \, A))
 ## can't do @macroexpand @inplace B = A \ 2 * π * B yet...
 
+@macroexpand @inplace C /= A                == :(InplaceLinalg.C_div(C, 1, C, /, A))
+
 A = randn(100, 200)
 B = randn(200, 100)
 
@@ -83,22 +85,18 @@ At = collect(A')
 @time @inplace C += At' * Bt'
 @test C == 2C1
 
-if false
-
 ## scaling scal!()
-@time @inplace C *= 2
-@test C ≈ 4C1
+#@time @inplace C *= 2
+#@test C ≈ 4C1
 
-@time @inplace C *= π
-@test C ≈ 4π * C1
+#@time @inplace C *= π
+#@test C ≈ 4π * C1
 
 ## copy blascopy!()
-@inplace C *= 0
-@time @inplace C = C1
-@test C == C1
+#@inplace C *= 0
+#@time @inplace C = C1
+#@test C == C1
 
 ## simple in-place add sxpy!()
-@time @inplace C += C1
-@test C == 2C1
-
-end
+#@time @inplace C += C1
+#@test C == 2C1
