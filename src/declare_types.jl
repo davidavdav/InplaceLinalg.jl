@@ -8,7 +8,9 @@ BlasArray{T} = Union{BlasVector{T}, BlasMatrix{T}}
 
 BlasTranspose{T} = Transpose{T,P} where P <: BlasArray{T} 
 BlasAdjoint{T} = Adjoint{T,P} where P <: BlasArray{T} 
-BlasRow{T} = Transpose{T,P} where P <: BlasVector{T}
+BlasTransRow{T} = Transpose{T,P} where P <: BlasVector{T}
+BlasAdjRow{T} = Adjoint{T,P} where P <: BlasVector{T}
+BlasRow{T} = Union{BlasTransRow{T}, BlasAdjRow{T}}
 
 BlasNode{T,N} = Union{Array{T,N}, SubArray{T,N}} where T <:BlasFloat #add more here if needed
 
@@ -20,6 +22,9 @@ SimpleTriangular{T} = Union{AbstractTriangular{T}, TransposeTriangular{T}, Adjoi
 TransformedTriangular{T} = Union{TransposeTriangular{T}, AdjointTriangular{T}}
 
 BlasTriangular{T} = Union{AbstractTriangular{T}, TransformedTriangular{T}, UniformScaling{T}} where T <: BlasFloat 
+
+
+AxpyVec{T} = Union{DenseArray{T},AbstractVector{T}} where T <: BlasFloat
 
 transposechar(::AbstractMatrix) = 'N'
 transposechar(::Transpose) = 'T'
@@ -56,3 +61,7 @@ Base.getproperty(T::BlasTriangular, p::Symbol) = p==:uplo     ? uplochar(T)     
                                                  p==:blasnode ? blasnode(T)       :
                                                  getfield(T,p)
 #
+
+
+#adj2tr(X) = X
+#adj2tr(X::Adjoint{T}) where T <: Real = transpose(parent(X))
