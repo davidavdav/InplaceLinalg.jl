@@ -13,6 +13,7 @@ do_gemm!(α, TA, A, TB, B::Symmetric, β, C) = BLAS.symm!('R', B.uplo, α, blasn
 
 
 function gemm_αABβC!(α, A, B, β, C::BlasMatrix{T}) where T
+    (C===A || C===B) && ip_error("multiplicative update to LHS not available for general multipliers.")
     try 
         α, β = convert.(T, (α, β))
         do_gemm!(α, tr2blas(A)..., tr2blas(B)..., β, C) 
@@ -27,7 +28,7 @@ C_AB!(C::BlasMatrix{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{
 C_AB!(C::BlasMatrix{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T = gemm_αABβC!(α, A, B, β, C)
 
 
-# AXPY and AXPY and copyto!  ===================================================================== 
+# AXPY and AXPBY and copyto!  ===================================================================== 
 
 function C_AB!(y::AxpyVec{T}, β::Number, α1::Number, α2::Number, x::AxpyVec{T}) where T 
     α = α1*α2
@@ -47,6 +48,7 @@ do_gemv!(α, TA, A::Symmetric, B, β, C) = BLAS.symv!(A.uplo, α, blasnode(A), B
 
 
 function gemv_αABβC!(α, A, B, β, C::BlasVector{T}) where T
+    C===B && ip_error("multiplicative update to LHS not available for general multiplier.")
     try 
         α, β = convert.(T, (α, β))
         do_gemv!(α, tr2blas(A)..., B, β, C) 
@@ -67,7 +69,7 @@ function do_syrk!(α, A, B, β, C::Symmetric{T}) where T
     TB, B = tr2blas(B)
     cond1 = A===B
     cond2 = (TA=='N' && TB=='T') || (TA=='T' && TB=='N')  
-    ( cond1 && cond2) || ip_error("Conditions violated for update to Symmetric LHS.")
+    ( cond1 && cond2) || ip_error("conditions violated for update to Symmetric LHS.")
     try 
         α, β = convert.(T, (α, β))
         BLAS.syrk!(C.uplo, TA, α, A, β, blasnode(C))
@@ -87,7 +89,7 @@ function do_herk!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
     TB, B = tr2blas(B)
     cond1 = A===B
     cond2 = (TA=='N' && TB=='C') || (TA=='C' && TB=='N')  
-    ( cond1 && cond2) || ip_error("Conditions violated for update to Hermitian LHS.")
+    ( cond1 && cond2) || ip_error("conditions violated for update to Hermitian LHS.")
     try 
         α, β = convert.(F, (α, β))
         BLAS.herk!(C.uplo, TA, α, A, β, blasnode(C))
@@ -113,9 +115,9 @@ C_AB!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Numbe
 
 # SYR =============================================
 function do_syr!(α, A, B, β, C::Symmetric{T}) where T
-    β==1 || ip_error("Symmetric rank 1 update cannot prescale LHS (β==1 required).")
+    β==1 || ip_error("symmetric rank 1 update cannot prescale LHS (β==1 required).")
     TB, B = tr2blas(B)
-    (A===B && TB=='T') || ip_error("Conditions violated for update to Symmetric LHS.")
+    (A===B && TB=='T') || ip_error("conditions violated for update to Symmetric LHS.")
     try 
         α = convert(T, α)
         BLAS.syr!(C.uplo, α, A, blasnode(C))
@@ -131,8 +133,8 @@ C_AB!(C::Symmetric{T}, β::Number, A::BlasVector{T}, B::BlasRow{T}, α::Number) 
 
 # HER =============================================
 function do_her!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
-    β==1 || ip_error("Symmetric rank 1 update cannot prescale LHS (β==1 required).")
-    A===parent(B) || ip_error("Conditions violated for update to Hermitian LHS.")
+    β==1 || ip_error("symmetric rank 1 update cannot prescale LHS (β==1 required).")
+    A===parent(B) || ip_error("conditions violated for update to Hermitian LHS.")
     try 
         α = convert(F, α)
         BLAS.her!(C.uplo, α, A, blasnode(C))
@@ -152,5 +154,44 @@ C_AB!(C::Hermitian{T}, β::Number, A::BlasVector{T}, B::BlasAdjRow{T}, α::Numbe
     do_her!(α, A, B, β, C)
 #    
 
-# TRMM and TRMV ====================================
+# TRMM ====================================
+do_trmm!(α, B, side, A::SimpleTriangular)  = BLAS.trmm!(side, A.uplo, A.trans, A.diag, α, A.blasnode, B)
+do_trmm!(α, B, side, A::UniformScaling) = rmul!(B,α*A.λ)
+do_trmm!(α, B, side, A::Number) = rmul!(B,α*A)
+#do_trmm!(B, α, A::InverseTriangular) = BLAS.trmm!(side, A.uplo, A.trans, A.diag, α, A.blasnode, B)
 
+function trmm_αABβC!(α,A,B,β,C::BlasMatrix{T},side) where T
+    β==0 || ip_error("additive update to LHS not available for triangular multiplier (β==0 required).")
+    try
+        α = convert(T,α)
+        C===B || copyto!(C,B)
+        do_trmm!(α, C, side, A)
+    catch err
+        ip_error(err)
+    end
+
+end
+
+C_AB!(C::BlasMatrix{T}, β::Number, α::Number, A::BlasTriangular{T}, B::BlasMatrix{T}) where T = 
+    trmm_αABβC!(α, A, B, β, C, 'L')
+#
+C_AB!(C::BlasMatrix{T}, β::Number, A::BlasTriangular{T}, α::Number, B::BlasMatrix{T}) where T = 
+    trmm_αABβC!(α, A, B, β, C, 'L')
+#
+C_AB!(C::BlasMatrix{T}, β::Number, A::BlasTriangular{T}, B::BlasMatrix{T}, α::Number) where T = 
+    trmm_αABβC!(α, A, B, β, C, 'L')
+#
+
+C_AB!(C::BlasMatrix{T}, β::Number, α::Number, B::BlasMatrix{T}, A::BlasTriangular{T}) where T = 
+    trmm_αABβC!(α, A, B, β, C, 'R')
+#
+C_AB!(C::BlasMatrix{T}, β::Number, B::BlasMatrix{T}, α::Number, A::BlasTriangular{T}) where T = 
+    trmm_αABβC!(α, A, B, β, C, 'R')
+#
+C_AB!(C::BlasMatrix{T}, β::Number, B::BlasMatrix{T}, A::BlasTriangular{T}, α::Number) where T = 
+    trmm_αABβC!(α, A, B, β, C, 'R')
+#
+
+
+
+# TRMV ====================================
