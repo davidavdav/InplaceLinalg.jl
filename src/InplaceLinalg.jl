@@ -24,6 +24,13 @@ function inplace(expr::Expr)
         β = 0
     end
     α, A, B = factors(term2)
+    if ass in [:(+=), :(-=)]
+        β = dobeta(Val{ass}, β)
+        if ass == :(-=)
+            α = negate(α)
+        end
+        ass = :(=)
+    end
     if (β, α, A) == (0, 1, 1)
         α, B, div, A = quotient(B)
         if (div != nothing) 
@@ -33,15 +40,10 @@ function inplace(expr::Expr)
             ass == :(/=) && return :(InplaceLinalg.C_div!($lhs, 1, $lhs, /, $B))
             ass == :(=) && return :($lhs .= $B)
         end
+        ip_error("Unhandled case")
     elseif (β, α, typeof(A)) == (0, 1, Expr) && A.args[1] == :\
         _, α, div, A = quotient(A)
         return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
-    end
-    if ass in [:(+=), :(-=)]
-        β = dobeta(Val{ass}, β)
-    end
-    if ass == :(-=)
-        α = negate(α)
     end
     ass in [:(/=), :(*=)] && ip_error("Unexpected assignment operator")
     return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))

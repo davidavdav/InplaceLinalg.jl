@@ -25,6 +25,10 @@ using Test
 @macroexpand @inplace C += 2.5C + π * A * B == :(InplaceLinalg.C_AB!(C, 3.5, π, A, B))
 @macroexpand @inplace C -= 2.5C + 2exp(1) * A * B == :(InplaceLinalg.C_AB!(C, -1.5, -(2 * exp(1)), A, B))
 
+@macroexpand @inplace C += A                == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
+@macroexpand @inplace C = C + A             == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
+@macroexpand @inplace C = 0.1C + 0.2A       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
+
 @macroexpand @inplace C = B / A             == :(InplaceLinalg.C_div(C, 1, B, /, A))
 @macroexpand @inplace C = 2B / A            == :(InplaceLinalg.C_div(C, 2, B, /, A))
 @macroexpand @inplace C = α * B / A         == :(InplaceLinalg.C_div(C, α, B, /, A))
