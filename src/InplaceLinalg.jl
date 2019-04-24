@@ -5,6 +5,8 @@ using LinearAlgebra
 export @inplace, InplaceException
 
 include("declare_types.jl")
+include("error_handling.jl")
+
 
 macro inplace(x)
     esc(inplace(x))
@@ -19,7 +21,8 @@ function inplace(expr::Expr)
         if α != 1
             β = :($α * $β)
         end
-        @assert lhs == C "First term must be linear in the LHS" lhs C
+        #@assert lhs == C "First term must be linear in the LHS" lhs C
+        lhs ==C || return :(ip_error("First term must be a multiple of the LHS"))
     else 
         β = 0
     end
@@ -35,12 +38,12 @@ function inplace(expr::Expr)
         α, B, div, A = quotient(B)
         if (div != nothing) 
             ass == :(=) && return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
-            ip_error("Can only use / or \\ with plain assignment =")
+            return :(ip_error("Can only use / or \\ with plain assignment ="))
         else
             ass == :(/=) && return :(InplaceLinalg.C_div!($lhs, 1, $lhs, $(/), $B))
             ass == :(=) && return :($lhs .= $B)
         end
-        ip_error("Unhandled case")
+        return :(ip_error("Unhandled case"))
     elseif (β, α, typeof(A)) == (0, 1, Expr) && A.args[1] == :\
         γ, α, div, A = quotient(A)
         if γ != 1
@@ -48,11 +51,11 @@ function inplace(expr::Expr)
         end
         return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
     end
-    ass in [:(/=), :(*=)] && ip_error("Unexpected assignment operator")
+    ass in [:(/=), :(*=)] && return :(ip_error("Unexpected assignment operator"))
     ## println((β, α, A, B))
     isa(B, Symbol) || 
         isa(B, Expr) && B.head == Symbol("'") && isa(B.args[1], Symbol) || 
-        ip_error("Too complex expression for inplace")
+        return :(ip_error("Too complex expression for inplace"))
     return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
 end
 inplace(x) = x
@@ -127,7 +130,6 @@ quotient(x) = 1, x, nothing, nothing
 
 
 
-include("error_handling.jl")
 
 C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
 C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination of types not implemented.")

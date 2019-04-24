@@ -1,5 +1,5 @@
 import Base:showerror
-
+export ip_error
 abstract type InplaceException <: Exception end
 
 struct InplaceException1 <: InplaceException

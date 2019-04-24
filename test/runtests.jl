@@ -1,5 +1,5 @@
 using InplaceLinalg
-using Test
+using Test, LinearAlgebra
 
 @test @macroexpand(@inplace C = A * B)             == :(InplaceLinalg.C_AB!(C, 0, 1, A, B))
 @test @macroexpand(@inplace C = α * A * B)         == :(InplaceLinalg.C_AB!(C, 0, α, A, B))
@@ -42,9 +42,9 @@ using Test
 
 @test @macroexpand(@inplace C /= A)                == :(InplaceLinalg.C_div!(C, 1, C, $(/), A))
 
-@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
+#@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
 
-@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
+#@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
 
 A = randn(100, 200)
 B = randn(200, 100)
@@ -108,3 +108,82 @@ At = collect(A')
 ## simple in-place add sxpy!()
 #@time @inplace C += C1
 #@test C == 2C1
+
+# TRSM =========================================================================
+m,n = 10,20
+B0 = randn(m,n)
+AL = LowerTriangular(randn(m,m))
+AR = UpperTriangular(randn(n,n))
+AL1 = UnitLowerTriangular(randn(m,m))
+AR1 = UnitUpperTriangular(randn(n,n))
+rI = UniformScaling(randn())
+C = similar(B0)
+α = randn()
+
+# test basics: \,/; two different inplace behaviours; Upper and Lower triangles
+B = copy(B0); @inplace C = AL \ B
+@test B == B0
+@test C ≈ AL \ B0
+
+B = copy(B0); @inplace B = AL \ B
+@test B ≈ AL \ B0
+
+B = copy(B0); @inplace C = B / AR
+@test B == B0
+@test C ≈ B0 / AR
+
+B = copy(B0); @inplace B = B / AR
+@test B ≈ B0 / AR
+
+#test scaling
+B = copy(B0); @inplace B = AL \ α*B
+@test B ≈ AL \ (α*B0)
+
+B = copy(B0); @inplace B = AL \ B*α
+@test B ≈ AL \ (α*B0)
+
+B = copy(B0); @inplace B = AL \ 2B
+@test B ≈ AL \ 2B0
+
+B = copy(B0); @inplace B = AL \ 2*B
+@test B ≈ AL \ 2B0
+
+B = copy(B0); @inplace B = α*B / AR
+@test B ≈ α*B0 / AR
+
+B = copy(B0); @inplace B = B*α / AR
+@test B ≈ α*B0 / AR
+
+B = copy(B0); @inplace B = 2B / AR
+@test B ≈ 2B0 / AR
+
+B = copy(B0); @inplace B = 2*B / AR
+@test B ≈ 2B0 / AR
+
+#test unit-diagonal triangles and UniformScaling 
+B = copy(B0); @inplace B = AL1 \ B
+@test B ≈ AL1 \ B0
+
+B = copy(B0); @inplace B = rI \ B
+@test B ≈ rI \ B0
+
+B = copy(B0); @inplace B = B / AR1
+@test B ≈ B0 / AR1
+
+B = copy(B0); @inplace B = B / rI 
+@test B ≈ B0 / rI
+
+#test some disallowed stuff
+
+@test_throws InplaceException @inplace C += AL \ B 
+@test_throws InplaceException @inplace C = C + AL \ B 
+@test_throws InplaceException @inplace C += B / AR 
+@test_throws InplaceException @inplace C = C + B / AR 
+
+Am = randn(m,m)
+An = randn(n,n)
+@test_throws InplaceException @inplace B = Am*B
+@test_throws InplaceException @inplace B = B*An 
+@test_throws InplaceException @inplace C = AL / B 
+
+@test_throws InplaceException @inplace C = A*B + C*D 
