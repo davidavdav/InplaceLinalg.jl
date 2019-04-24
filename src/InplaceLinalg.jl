@@ -2,7 +2,7 @@ module InplaceLinalg
 
 using LinearAlgebra
 
-export @inplace,InplaceException
+export @inplace, InplaceException
 
 include("declare_types.jl")
 
@@ -37,15 +37,22 @@ function inplace(expr::Expr)
             ass == :(=) && return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
             ip_error("Can only use / or \\ with plain assignment =")
         else
-            ass == :(/=) && return :(InplaceLinalg.C_div!($lhs, 1, $lhs, /, $B))
+            ass == :(/=) && return :(InplaceLinalg.C_div!($lhs, 1, $lhs, $(/), $B))
             ass == :(=) && return :($lhs .= $B)
         end
         ip_error("Unhandled case")
     elseif (β, α, typeof(A)) == (0, 1, Expr) && A.args[1] == :\
-        _, α, div, A = quotient(A)
+        γ, α, div, A = quotient(A)
+        if γ != 1
+            α = :($γ * $α)
+        end
         return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
     end
     ass in [:(/=), :(*=)] && ip_error("Unexpected assignment operator")
+    ## println((β, α, A, B))
+    isa(B, Symbol) || 
+        isa(B, Expr) && B.head == Symbol("'") && isa(B.args[1], Symbol) || 
+        ip_error("Too complex expression for inplace")
     return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
 end
 inplace(x) = x

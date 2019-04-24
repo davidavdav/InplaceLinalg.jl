@@ -1,46 +1,50 @@
 using InplaceLinalg
 using Test
 
-@macroexpand @inplace C = A * B             == :(InplaceLinalg.C_AB!(C, 0, 1, A, B))
-@macroexpand @inplace C = α * A * B         == :(InplaceLinalg.C_AB!(C, 0, α, A, B))
-@macroexpand @inplace C = A * 7B            == :(InplaceLinalg.C_AB!(C, 0, 7, A, B))
-@macroexpand @inplace C = 3A * B            == :(InplaceLinalg.C_AB!(C, 0, 3, A, B))
-@macroexpand @inplace C = 3A * 7B           == :(InplaceLinalg.C_AB!(C, 0, 3 * 7, A, B))
+@test @macroexpand(@inplace C = A * B)             == :(InplaceLinalg.C_AB!(C, 0, 1, A, B))
+@test @macroexpand(@inplace C = α * A * B)         == :(InplaceLinalg.C_AB!(C, 0, α, A, B))
+@test @macroexpand(@inplace C = A * 7B)            == :(InplaceLinalg.C_AB!(C, 0, 7, A, B))
+@test @macroexpand(@inplace C = 3A * B)            == :(InplaceLinalg.C_AB!(C, 0, 3, A, B))
+@test @macroexpand(@inplace C = 3A * 7B)           == :(InplaceLinalg.C_AB!(C, 0, 3 * 7, A, B))
 
-@macroexpand @inplace C = C + α * A * B     == :(InplaceLinalg.C_AB!(C, 1, α, A, B))
-@macroexpand @inplace C = β * C + α * A * B == :(InplaceLinalg.C_AB!(C, β, α, A, B))
-@macroexpand @inplace C = β * C + 2π * A * B == :(InplaceLinalg.C_AB!(C, β, 2π, A, B))
-@macroexpand @inplace C = β * C + 2 * π * A * B == :(InplaceLinalg.C_AB!(C, β, 2π, A, B))
-@macroexpand @inplace C = β * C + A * B     == :(InplaceLinalg.C_AB!(C, β, 1, A, B))
-@macroexpand @inplace C = 2π * C + A * B    == :(InplaceLinalg.C_AB!(C, 2π, 1, A, B))
-@macroexpand @inplace C = 2*π * C + A * B   == :(InplaceLinalg.C_AB!(C, 2π, 1, A, B))
+@test @macroexpand(@inplace C = C + α * A * B)     == :(InplaceLinalg.C_AB!(C, 1, α, A, B))
+@test @macroexpand(@inplace C = β * C + α * A * B) == :(InplaceLinalg.C_AB!(C, β, α, A, B))
+@test @macroexpand(@inplace C = β * C + 2π * A * B) == :(InplaceLinalg.C_AB!(C, β, 2π, A, B))
+@test @macroexpand(@inplace C = β * C + 2 * π * A * B) == :(InplaceLinalg.C_AB!(C, β, 2π, A, B))
+@test @macroexpand(@inplace C = β * C + A * B)     == :(InplaceLinalg.C_AB!(C, β, 1, A, B))
+@test @macroexpand(@inplace C = 2π * C + A * B)    == :(InplaceLinalg.C_AB!(C, 2π, 1, A, B))
+@test @macroexpand(@inplace C = 2*π * C + A * B)   == :(InplaceLinalg.C_AB!(C, 2π, 1, A, B))
 
-@macroexpand @inplace C += A * B            == :(InplaceLinalg.C_AB!(C, 1, 1, A, B))
-@macroexpand @inplace C += α * A * B        == :(InplaceLinalg.C_AB!(C, 1, α, A, B))
-@macroexpand @inplace C -= A * B            == :(InplaceLinalg.C_AB!(C, 1, -1, A, B))
-@macroexpand @inplace C -= α * A * B        == :(InplaceLinalg.C_AB!(C, 1, -α, A, B))
+@test @macroexpand(@inplace C += A * B)            == :(InplaceLinalg.C_AB!(C, 1, 1, A, B))
+@test @macroexpand(@inplace C += α * A * B)        == :(InplaceLinalg.C_AB!(C, 1, α, A, B))
+@test @macroexpand(@inplace C -= A * B)            == :(InplaceLinalg.C_AB!(C, 1, -1, A, B))
+@test @macroexpand(@inplace C -= α * A * B)        == :(InplaceLinalg.C_AB!(C, 1, -α, A, B))
 
-@macroexpand @inplace C += 2C + A * B       == :(InplaceLinalg.C_AB!(C, 3, 1, A, B))
-@macroexpand @inplace C -= 2C + A * B       == :(InplaceLinalg.C_AB!(C, -1, -1, A, B))
-@macroexpand @inplace C += 2.5C + π * A * B == :(InplaceLinalg.C_AB!(C, 3.5, π, A, B))
-@macroexpand @inplace C -= 2.5C + 2exp(1) * A * B == :(InplaceLinalg.C_AB!(C, -1.5, -(2 * exp(1)), A, B))
+@test @macroexpand(@inplace C += 2C + A * B)       == :(InplaceLinalg.C_AB!(C, 3, 1, A, B))
+@test @macroexpand(@inplace C -= 2C + A * B)       == :(InplaceLinalg.C_AB!(C, -1, -1, A, B))
+@test @macroexpand(@inplace C += 2.5C + π * A * B) == :(InplaceLinalg.C_AB!(C, 3.5, π, A, B))
+@test @macroexpand(@inplace C -= 2.5C + 2exp(1) * A * B) == :(InplaceLinalg.C_AB!(C, -1.5, -(2 * exp(1)), A, B))
 
-@macroexpand @inplace C += A                == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
-@macroexpand @inplace C = C + A             == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
-@macroexpand @inplace C = 0.1C + 0.2A       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
+@test @macroexpand(@inplace C += A)                == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
+@test @macroexpand(@inplace C = C + A)             == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
+@test @macroexpand(@inplace C = 0.1C + 0.2A)       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
 
-@macroexpand @inplace C = B / A             == :(InplaceLinalg.C_div(C, 1, B, /, A))
-@macroexpand @inplace C = 2B / A            == :(InplaceLinalg.C_div(C, 2, B, /, A))
-@macroexpand @inplace C = α * B / A         == :(InplaceLinalg.C_div(C, α, B, /, A))
-@macroexpand @inplace C = 2π * B / A        == :(InplaceLinalg.C_div(C, 2π, B, /, A))
-@macroexpand @inplace C = 2*π * B / A       == :(InplaceLinalg.C_div(C, 2π, B, /, A))
-@macroexpand @inplace C = A \ B             == :(InplaceLinalg.C_div(C, 1, B, \, A))
-@macroexpand @inplace C = A \ 2B            == :(InplaceLinalg.C_div(C, 2, B, \, A))
-@macroexpand @inplace C = A \ α * B         == :(InplaceLinalg.C_div(C, α, B, \, A))
-@macroexpand @inplace C = A \ 2π * B        == :(InplaceLinalg.C_div(C, 2π, B, \, A))
-## can't do @macroexpand @inplace B = A \ 2 * π * B yet...
+@test @macroexpand(@inplace C = B / A)             == :(InplaceLinalg.C_div!(C, 1, B, $(/), A))
+@test @macroexpand(@inplace C = 2B / A)            == :(InplaceLinalg.C_div!(C, 2, B, $(/), A))
+@test @macroexpand(@inplace C = α * B / A)         == :(InplaceLinalg.C_div!(C, α, B, $(/), A))
+@test @macroexpand(@inplace C = 2π * B / A)        == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
+@test @macroexpand(@inplace C = 2*π * B / A)       == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
+@test @macroexpand(@inplace C = A \ B)             == :(InplaceLinalg.C_div!(C, 1, B, $(\), A))
+@test @macroexpand(@inplace C = A \ 2B)            == :(InplaceLinalg.C_div!(C, 2, B, $(\), A))
+@test @macroexpand(@inplace C = A \ α * B)         == :(InplaceLinalg.C_div!(C, α, B, $(\), A))
+@test @macroexpand(@inplace C = A \ 2π * B)        == :(InplaceLinalg.C_div!(C, 2π, B, $(\), A))
+## can't do @test @macroexpand(@inplace B = A \ 2 * π * B yet...
 
-@macroexpand @inplace C /= A                == :(InplaceLinalg.C_div(C, 1, C, /, A))
+@test @macroexpand(@inplace C /= A)                == :(InplaceLinalg.C_div!(C, 1, C, $(/), A))
+
+@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
+
+@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
 
 A = randn(100, 200)
 B = randn(200, 100)
