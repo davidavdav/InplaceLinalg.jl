@@ -54,11 +54,11 @@ C1 = A * B
 
 ## Basic matrix multiplication, gemm!()
 @time @inplace C = A * B
-@test C == C1
+@test C ≈ C1
 
 
 @time @inplace C += A * B
-@test C == 2C1
+@test C ≈ 2C1
 
 ## With scaling factor 
 @time @inplace C = 3.0 * A * B
@@ -76,22 +76,22 @@ Bt = collect(B')
 At = collect(A')
 
 @time @inplace C = At' * B
-@test C == C1
+@test C ≈ C1
 
 @time @inplace C += At' * B
-@test C == 2C1
+@test C ≈ 2C1
 
 @time @inplace C = A * Bt'
-@test C == C1
+@test C ≈ C1
 
 @time @inplace C += A * Bt'
-@test C == 2C1
+@test C ≈ 2C1
 
 @time @inplace C = At' * Bt'
-@test C == C1
+@test C ≈ C1
 
 @time @inplace C += At' * Bt'
-@test C == 2C1
+@test C ≈ 2C1
 
 ## scaling scal!()
 #@time @inplace C *= 2
