@@ -14,13 +14,10 @@ end
 
 function inplace(expr::Expr) 
     #dump(expr)
-    lhs, ass, rhs = assignment(expr);
+    lhs, ass, rhs = assignment(expr)
     term1, term2 = terms(rhs)
     if term1 != 0
-        α, β, C = factors(term1)
-        if α != 1
-            β = :($α * $β)
-        end
+        β, C = factors(term1, 2)
         #@assert lhs == C "First term must be linear in the LHS" lhs C
         lhs ==C || return :(ip_error("First term must be a multiple of the LHS"))
     else 
@@ -74,24 +71,30 @@ function terms(expr::Expr)
 end
 terms(x) = 0, x
 
-function factors(expr::Expr, min=3)
-    if expr.head == :call && length(expr.args) ≥ min && expr.args[1] == :*
-        B = pop!(expr.args)
-        A = pop!(expr.args)
-        _, a, A = factors(A, 2)
-        _, b, B = factors(B, 2)
-        for f in [a, b]
-            f != 1 && push!(expr.args, f)
+function factors(expr::Expr, n=3)
+    ret = []
+    scalars = []
+    if expr.head == :call && expr.args[1] == :*
+        for i in 2:min(length(expr.args), n)
+            factor = pop!(expr.args)
+            scalar, factor = factors(factor, 2)
+            pushfirst!(ret, factor)
+            scalar != 1 && pushfirst!(scalars, scalar)
         end
-        alpha = InplaceLinalg.factor(expr)
-        return alpha, A, B
+        while length(expr.args) > 1
+            scalar, = factors(pop!(expr.args), 1)
+            scalar != 1 && pushfirst!(scalars, scalar)
+        end
+        scalar = length(scalars) == 0 ? 1 : length(scalars) == 1 ? scalars[1] : Expr(:call, :*, scalars...)
+        return tuple(scalar, ret...)
     else
-        return 1, 1, expr
+        return fill(1, n-1)..., expr
     end
 end
-factors(x, min=3) = 1, 1, x
+factors(x, n=3) = fill(1, n-1)..., x
 
 
+        
 function factor(expr::Expr)
     nfactors = length(expr.args) - 1
     nfactors == 0 && return 1
@@ -111,15 +114,12 @@ function quotient(expr::Expr)
     if expr.head == :call && length(expr.args) == 3
         if expr.args[1] == :/
             num, den = expr.args[2:3]
-            γ, α, num = factors(num)
-            if γ != 1
-                α = :($γ * $α)
-            end
+            α, num = factors(num, 2)
             return α, num, /, den
         else
             if expr.args[1] == :\
                 den, num = expr.args[2:3]
-                _, α, num = factors(num, 2)
+                α, num = factors(num, 2)
                 return α, num, \, den
             end
         end
