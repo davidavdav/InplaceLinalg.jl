@@ -13,13 +13,16 @@ do_gemm!(α, TA, A, TB, B::Symmetric, β, C) = BLAS.symm!('R', B.uplo, α, blasn
 
 
 function gemm_αABβC!(α, A, B, β, C::BlasMatrix{T}) where T
-    (C===A || C===B) && ip_error("multiplicative update to LHS not available for general multipliers.")
-    try 
+   try 
+        C===A && α==1 && β==0 && return rmul!(A,B)
+        C===B && α==1 && β==0 && return lmul!(A,B)
+        (C===A || C===B) && β≠0 && ip_error("multiplicative and additive updates cannot be combined.")
+        (C===A || C===B) && α≠1 && ip_error("scaled multiplicative update not available for these types.")
         α, β = convert.(T, (α, β))
         do_gemm!(α, tr2blas(A)..., tr2blas(B)..., β, C) 
-    catch err
-        ip_error(err)
-    end
+   catch err
+       err isa InplaceException ? rethrow(err) : ip_error(err)
+   end
 end
 
 
@@ -43,17 +46,33 @@ end
 
 
 # GEMV and SYMV =====================================================================================
+import LinearAlgebra: lmul!,rmul!
+function rmul!(A::AbstractVector, D::Diagonal)
+    @assert !LinearAlgebra.has_offset_axes(A)
+    A .= A .* transpose(D.diag)
+    return A
+end
+
+function lmul!(D::Diagonal, B::AbstractVector)
+    @assert !LinearAlgebra.has_offset_axes(B)
+    B .= D.diag .* B
+    return B
+end
+
 do_gemv!(α, TA, A, B, β, C) = BLAS.gemv!(TA, α, A, B, β, C)      # C ← αAB + βC  (with transposition as specified)
 do_gemv!(α, TA, A::Symmetric, B, β, C) = BLAS.symv!(A.uplo, α, blasnode(A), B, β, C)
 
 
 function gemv_αABβC!(α, A, B, β, C::BlasVector{T}) where T
-    C===B && ip_error("multiplicative update to LHS not available for general multiplier.")
     try 
+        C===A && α==1 && β==0 && return rmul!(A,B)
+        C===B && α==1 && β==0 && return lmul!(A,B)
+        (C===A || C===B) && β≠0 && ip_error("multiplicative and additive updates cannot be combined.")
+        (C===A || C===B) && α≠1 && ip_error("scaled multiplicative update not available for these types (α==1 required).")
         α, β = convert.(T, (α, β))
         do_gemv!(α, tr2blas(A)..., B, β, C) 
     catch err
-        ip_error(err)
+        err isa InplaceException ? rethrow(err) : ip_error(err)
     end
 end
 
@@ -195,3 +214,9 @@ C_AB!(C::BlasMatrix{T}, β::Number, B::BlasMatrix{T}, A::BlasTriangular{T}, α::
 
 
 # TRMV ====================================
+This is handled by lmul!, which calls TRMV
+
+
+
+
+

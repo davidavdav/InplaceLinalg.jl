@@ -174,6 +174,7 @@ B = copy(B0); @inplace B = B / rI
 @test B ≈ B0 / rI
 
 #test some disallowed stuff
+B = copy(B0)
 
 @test_throws InplaceException @inplace C += AL \ B 
 @test_throws InplaceException @inplace C = C + AL \ B 
@@ -187,3 +188,49 @@ An = randn(n,n)
 @test_throws InplaceException @inplace C = AL / B 
 
 @test_throws InplaceException @inplace C = A*B + C*D 
+
+
+# TRSV =========================================================================
+m = 10
+B0 = randn(m)
+AL = LowerTriangular(randn(m,m))
+AU = UpperTriangular(randn(m,m))
+AL1 = UnitLowerTriangular(randn(m,m))
+AU1 = UnitUpperTriangular(randn(m,m))
+rI = UniformScaling(randn())
+C = similar(B0)
+α = randn()
+
+# test basics: two different inplace behaviours; triangle variants
+B = copy(B0); @inplace C = AL \ B
+@test B == B0
+@test C ≈ AL \ B0
+
+B = copy(B0); @inplace B = AL \ B
+@test B ≈ AL \ B0
+
+B = copy(B0); @inplace B = AU \ B
+@test B ≈ AU \ B0
+
+B = copy(B0); @inplace B = AL1 \ B
+@test B ≈ AL1 \ B0
+
+B = copy(B0); @inplace B = AU1 \ B
+@test B ≈ AU1 \ B0
+
+B = copy(B0); @inplace B = rI \ B
+@test B ≈ rI \ B0
+
+
+#scaling is disallowed
+@test_throws InplaceException @inplace B = AL \ α*B
+@test_throws InplaceException @inplace B = AL \ B*α
+@test_throws InplaceException @inplace B = AL \ 2B
+@test_throws InplaceException @inplace B = AL \ 2*B
+
+# this too ...
+@test_throws InplaceException @inplace B = B \ AL
+
+
+
+
