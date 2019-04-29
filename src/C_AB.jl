@@ -214,7 +214,7 @@ C_AB!(C::BlasMatrix{T}, β::Number, B::BlasMatrix{T}, A::BlasTriangular{T}, α::
 
 
 # TRMV ====================================
-This is handled by lmul!, which calls TRMV
+# This is handled by lmul!, which calls TRMV
 
 
 
