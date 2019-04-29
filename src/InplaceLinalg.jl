@@ -139,6 +139,9 @@ C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination o
 include("C_AB.jl")
 include("C_div.jl")
 
+include("extend_ldiv_and_rdiv.jl")
+include("div_update.jl")
+
 
 
 end # module

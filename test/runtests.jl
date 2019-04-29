@@ -116,6 +116,8 @@ AL = LowerTriangular(randn(m,m))
 AR = UpperTriangular(randn(n,n))
 AL1 = UnitLowerTriangular(randn(m,m))
 AR1 = UnitUpperTriangular(randn(n,n))
+DL = Diagonal(randn(m))
+DR = Diagonal(randn(n))
 rI = UniformScaling(randn())
 C = similar(B0)
 α = randn()
@@ -172,6 +174,27 @@ B = copy(B0); @inplace B = B / AR1
 
 B = copy(B0); @inplace B = B / rI 
 @test B ≈ B0 / rI
+
+
+#test Diagonal 
+B = copy(B0); @inplace B = DL \ B
+@test B ≈ DL \ B0
+
+B = copy(B0); @inplace B = B / DR
+@test B ≈ B0 / DR
+
+#Diagonal solve with prescaling not allowed
+B = copy(B0); 
+@test_throws InplaceException @inplace B = DL \ 2B
+@test_throws InplaceException @inplace B = 2B / DR
+
+
+
+#test /=
+B = copy(B0); @inplace B /= AR
+@test B ≈ B0 / AR
+
+
 
 #test some disallowed stuff
 B = copy(B0)
