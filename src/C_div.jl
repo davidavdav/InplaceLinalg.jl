@@ -1,8 +1,3 @@
-import LinearAlgebra: ldiv!, rdiv!
-ldiv!(α::Number, B::BlasArray) = lmul!(1/α,B)
-rdiv!(B::BlasArray,α::Number) = rmul!(B,1/α)
-
-
 # TRSM ==========================================================================
 do_trsm!(α, B, side, A::SimpleTriangular)  = BLAS.trsm!(side, A.uplo, A.trans, A.diag, α, A.blasnode, B)
 do_trsm!(α, B, side, A::UniformScaling) = rmul!(B,α/A.λ)
