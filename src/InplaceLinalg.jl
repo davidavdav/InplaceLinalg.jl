@@ -24,15 +24,14 @@ function inplace(expr::Expr)
     if ass == :(=) && isa(rhs, Expr) && rhs.head == :call && length(rhs.args) == 3
         if rhs.args[1] == :/
             num, den = rhs.args[2:3]
-            isa(den, Symbol) || error("Denominator should be a symbolic variable")
-            α, num = divupdate(lhs, num)
-            return :(InplaceLinalg.div_update!($lhs, $α, /, $den))
+            args = divupdate(lhs, num)
+            return :(InplaceLinalg.div_update!($(args...), /, $den))
         elseif rhs.args[1] == :\
             den, num = rhs.args[2:3]
-            isa(den, Symbol) || error("Denominator should be a symbolic variable")
-            α, num = divupdate(lhs, num)
-            return :(InplaceLinalg.div_update!($lhs, $α, \, $den))
+            args = divupdate(lhs, num)
+            return :(InplaceLinalg.div_update!($(args...), \, $den))
         end
+        ## fall through for other expressions
     elseif ass == :(/=)
         ## accept any RHS
         return :(InplaceLinalg.div_update!($lhs, /, $rhs))
@@ -70,13 +69,13 @@ end
 
 function divupdate(lhs::Symbol, num::Symbol)
     lhs == num || error("LHS must be equal to numerator in updating divide")
-    return 1, num
+    return tuple(num)
 end
 function divupdate(lhs::Symbol, num::Expr)
     num.head == :call && length(num.args) == 3 && num.args[1] == :* || error("Numerator must be simple multiplicative expression")
     matches = lhs .== num.args[2:3]
     sum(matches) == 1 || error("LHS must appear exactly once in multiplicative numerator expression")
-    return tuple(num.args[2 .+ matches]...) ## return args in correct order
+    return tuple(num.args[2 .+ .!matches]...) ## return args in correct order
 end
 
 function terms(expr::Expr)

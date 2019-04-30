@@ -29,11 +29,11 @@ using Test, LinearAlgebra
 @test @macroexpand(@inplace C = C + A)             == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
 @test @macroexpand(@inplace C = 0.1C + 0.2A)       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
 
-@test @macroexpand(@inplace B = B / A)             == :(InplaceLinalg.div_update!(B, 1, /, A))
+@test @macroexpand(@inplace B = B / A)             == :(InplaceLinalg.div_update!(B, /, A))
 @test @macroexpand(@inplace B = α * B / A)         == :(InplaceLinalg.div_update!(B, α, /, A))
 @test @macroexpand(@inplace B = 2π * B / A)        == :(InplaceLinalg.div_update!(B, 2π, /, A))
 @test @macroexpand(@inplace B = (2*π) * B / A)     == :(InplaceLinalg.div_update!(B, 2π, /, A))
-@test @macroexpand(@inplace B = A \ B)             == :(InplaceLinalg.div_update!(B, 1, \, A))
+@test @macroexpand(@inplace B = A \ B)             == :(InplaceLinalg.div_update!(B, \, A))
 @test @macroexpand(@inplace B = A \ 2B)            == :(InplaceLinalg.div_update!(B, 2, \, A))
 @test @macroexpand(@inplace B = A \ (α * B))       == :(InplaceLinalg.div_update!(B, α, \, A))
 @test @macroexpand(@inplace B = A \ (2π * B))      == :(InplaceLinalg.div_update!(B, 2π, \, A))
