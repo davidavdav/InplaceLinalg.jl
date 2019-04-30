@@ -8,8 +8,6 @@ include("declare_types.jl")
 include("error_handling.jl")
 
 
-
-
 macro inplace(x)
     try
         esc(inplace(x))
@@ -21,9 +19,7 @@ end
 function inplace(expr::Expr) 
     #dump(expr)
     ## parse assignment or err
-    expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] || error("Unknown assignment operator in " * string(expr))
-    lhs, ass, rhs = expr.args[1], expr.head, expr.args[2]
-    isa(lhs, Symbol) || error("LHS should be a symbolic variable")
+    lhs, ass, rhs = assignment(expr)
     ## select update expressions involving divisions
     if ass == :(=) && isa(rhs, Expr) && rhs.head == :call && length(rhs.args) == 3
         if rhs.args[1] == :/
@@ -31,7 +27,15 @@ function inplace(expr::Expr)
             isa(den, Symbol) || error("Denominator should be a symbolic variable")
             α, num = divupdate(lhs, num)
             return :(InplaceLinalg.div_update!($lhs, $α, /, $den))
+        elseif rhs.args[1] == :\
+            den, num = rhs.args[2:3]
+            isa(den, Symbol) || error("Denominator should be a symbolic variable")
+            α, num = divupdate(lhs, num)
+            return :(InplaceLinalg.div_update!($lhs, $α, \, $den))
         end
+    elseif ass == :(/=)
+        ## accept any RHS
+        return :(InplaceLinalg.div_update!($lhs, /, $rhs))
     end
     term1, term2 = terms(rhs)
     if term1 != 0
@@ -49,23 +53,6 @@ function inplace(expr::Expr)
         end
         ass = :(=)
     end
-    if (β, α, A) == (0, 1, 1)
-        α, B, div, A = quotient(B)
-        if (div != nothing) 
-            ass == :(=) && return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
-            return :(ip_error("Can only use / or \\ with plain assignment ="))
-        else
-            ass == :(/=) && return :(InplaceLinalg.C_div!($lhs, 1, $lhs, $(/), $B))
-            ass == :(=) && return :($lhs .= $B)
-        end
-        return :(ip_error("Unhandled case"))
-    elseif (β, α, typeof(A)) == (0, 1, Expr) && A.args[1] == :\
-        γ, α, div, A = quotient(A)
-        if γ != 1
-            α = :($γ * $α)
-        end
-        return :(InplaceLinalg.C_div!($lhs, $α, $B, $div, $A))
-    end
     ass in [:(/=), :(*=)] && return :(ip_error("Unexpected assignment operator"))
     ## println((β, α, A, B))
     isa(B, Symbol) || 
@@ -75,15 +62,21 @@ function inplace(expr::Expr)
 end
 inplace(x) = x
 
+function assignment(expr::Expr)
+    expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] || error("Unknown assignment operator in " * string(expr))
+    isa(expr.args[1], Symbol) || error("LHS should be a symbolic variable")
+    return expr.args[1], expr.head, expr.args[2]
+end
+
 function divupdate(lhs::Symbol, num::Symbol)
-    lhs == num || ip_error("LHS must be equal to numerator in updating divide")
+    lhs == num || error("LHS must be equal to numerator in updating divide")
     return 1, num
 end
 function divupdate(lhs::Symbol, num::Expr)
-    num.head == :call && length(num.args) == 3 && num.args[1] == :* || ip_error("Numerator must be simple multiplicative expression")
+    num.head == :call && length(num.args) == 3 && num.args[1] == :* || error("Numerator must be simple multiplicative expression")
     matches = lhs .== num.args[2:3]
-    sum(matches) == 1 || ip_error("LHS must appear exactly once in multiplicative numerator expression")
-    return tuple(num.args[2 .+ matches]...)
+    sum(matches) == 1 || error("LHS must appear exactly once in multiplicative numerator expression")
+    return tuple(num.args[2 .+ matches]...) ## return args in correct order
 end
 
 function terms(expr::Expr)
@@ -133,25 +126,6 @@ dobeta(::Type{Val{:(-=)}}, x) = :(1 - $x)
 
 negate(x::Number) = -x
 negate(x) = :(-$x)
-
-function quotient(expr::Expr)
-    if expr.head == :call && length(expr.args) == 3
-        if expr.args[1] == :/
-            num, den = expr.args[2:3]
-            α, num = factors(num, 2)
-            return α, num, /, den
-        else
-            if expr.args[1] == :\
-                den, num = expr.args[2:3]
-                α, num = factors(num, 2)
-                return α, num, \, den
-            end
-        end
-    end
-    return 1, expr, nothing, nothing
-end
-quotient(x) = 1, x, nothing, nothing
-
 
 
 

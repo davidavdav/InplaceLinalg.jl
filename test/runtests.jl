@@ -30,16 +30,15 @@ using Test, LinearAlgebra
 @test @macroexpand(@inplace C = 0.1C + 0.2A)       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
 
 @test @macroexpand(@inplace B = B / A)             == :(InplaceLinalg.div_update!(B, 1, /, A))
-#@test @macroexpand(@inplace C = α * B / A)         == :(InplaceLinalg.C_div!(C, α, B, $(/), A))
-#@test @macroexpand(@inplace C = 2π * B / A)        == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
-#@test @macroexpand(@inplace C = 2*π * B / A)       == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
-#@test @macroexpand(@inplace C = A \ B)             == :(InplaceLinalg.C_div!(C, 1, B, $(\), A))
-#@test @macroexpand(@inplace C = A \ 2B)            == :(InplaceLinalg.C_div!(C, 2, B, $(\), A))
-#@test @macroexpand(@inplace C = A \ (α * B))         == :(InplaceLinalg.C_div!(C, α, B, $(\), A))
-#@test @macroexpand(@inplace C = A \ (2π * B))        == :(InplaceLinalg.C_div!(C, 2π, B, $(\), A))
-## can't do @test @macroexpand(@inplace B = A \ 2 * π * B yet...
+@test @macroexpand(@inplace B = α * B / A)         == :(InplaceLinalg.div_update!(B, α, /, A))
+@test @macroexpand(@inplace B = 2π * B / A)        == :(InplaceLinalg.div_update!(B, 2π, /, A))
+@test @macroexpand(@inplace B = (2*π) * B / A)     == :(InplaceLinalg.div_update!(B, 2π, /, A))
+@test @macroexpand(@inplace B = A \ B)             == :(InplaceLinalg.div_update!(B, 1, \, A))
+@test @macroexpand(@inplace B = A \ 2B)            == :(InplaceLinalg.div_update!(B, 2, \, A))
+@test @macroexpand(@inplace B = A \ (α * B))       == :(InplaceLinalg.div_update!(B, α, \, A))
+@test @macroexpand(@inplace B = A \ (2π * B))      == :(InplaceLinalg.div_update!(B, 2π, \, A))
 
-#@test @macroexpand(@inplace C /= A)                == :(InplaceLinalg.C_div!(C, 1, C, $(/), A))
+@test @macroexpand(@inplace B /= A)                == :(InplaceLinalg.div_update!(B, /, A))
 
 #@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
 #@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
@@ -139,16 +138,16 @@ B = copy(B0); @inplace B = B / AR
 @test B ≈ B0 / AR
 
 #test scaling
-B = copy(B0); @inplace B = AL \ α*B
+B = copy(B0); @inplace B = AL \ (α*B)
 @test B ≈ AL \ (α*B0)
 
-B = copy(B0); @inplace B = AL \ B*α
+B = copy(B0); @inplace B = AL \ (B*α)
 @test B ≈ AL \ (α*B0)
 
 B = copy(B0); @inplace B = AL \ 2B
 @test B ≈ AL \ 2B0
 
-B = copy(B0); @inplace B = AL \ 2*B
+B = copy(B0); @inplace B = AL \ (2*B)
 @test B ≈ AL \ 2B0
 
 B = copy(B0); @inplace B = α*B / AR
@@ -167,8 +166,8 @@ B = copy(B0); @inplace B = 2*B / AR
 B = copy(B0); @inplace B = AL1 \ B
 @test B ≈ AL1 \ B0
 
-B = copy(B0); @inplace B = rI \ B
-@test B ≈ rI \ B0
+#B = copy(B0); @inplace B = rI \ B
+#@test B ≈ rI \ B0
 
 B = copy(B0); @inplace B = B / AR1
 @test B ≈ B0 / AR1
@@ -178,8 +177,8 @@ B = copy(B0); @inplace B = B / AR1
 
 
 #test Diagonal 
-B = copy(B0); @inplace B = DL \ B
-@test B ≈ DL \ B0
+#B = copy(B0); @inplace B = DL \ B
+#@test B ≈ DL \ B0
 
 #B = copy(B0); @inplace B = B / DR
 #@test B ≈ B0 / DR
@@ -226,34 +225,34 @@ C = similar(B0)
 α = randn()
 
 # test basics: two different inplace behaviours; triangle variants
-B = copy(B0); @inplace C = AL \ B
-@test B == B0
-@test C ≈ AL \ B0
+#B = copy(B0); @inplace C = AL \ B
+#@test B == B0
+#@test C ≈ AL \ B0
 
-B = copy(B0); @inplace B = AL \ B
-@test B ≈ AL \ B0
+#B = copy(B0); @inplace B = AL \ B
+#@test B ≈ AL \ B0
 
-B = copy(B0); @inplace B = AU \ B
-@test B ≈ AU \ B0
+#B = copy(B0); @inplace B = AU \ B
+#@test B ≈ AU \ B0
 
-B = copy(B0); @inplace B = AL1 \ B
-@test B ≈ AL1 \ B0
+#B = copy(B0); @inplace B = AL1 \ B
+#@test B ≈ AL1 \ B0
 
-B = copy(B0); @inplace B = AU1 \ B
-@test B ≈ AU1 \ B0
+#B = copy(B0); @inplace B = AU1 \ B
+#@test B ≈ AU1 \ B0
 
-B = copy(B0); @inplace B = rI \ B
-@test B ≈ rI \ B0
+#B = copy(B0); @inplace B = rI \ B
+#@test B ≈ rI \ B0
 
 
 #scaling is disallowed
-@test_throws InplaceException @inplace B = AL \ α*B
-@test_throws InplaceException @inplace B = AL \ B*α
-@test_throws InplaceException @inplace B = AL \ 2B
-@test_throws InplaceException @inplace B = AL \ 2*B
+#@test_throws InplaceException @inplace B = AL \ α*B
+#@test_throws InplaceException @inplace B = AL \ B*α
+#@test_throws InplaceException @inplace B = AL \ 2B
+#@test_throws InplaceException @inplace B = AL \ 2*B
 
 # this too ...
-@test_throws InplaceException @inplace B = B \ AL
+#@test_throws InplaceException @inplace B = B \ AL
 
 
 
