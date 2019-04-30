@@ -1,7 +1,24 @@
 export div_update!
 
-div_update!(B,α,f::Function,A) = ip_error("inplace solve for this combination of types not implemented.") 
-div_update!(B,f::Function,A) = ip_error("inplace solve for this combination of types not implemented.") 
+"""
+    div_upate
+
+Inplace solve (left or right matrix divide). Usage:    
+
+    div_update!(B,α,/,A)    # B = (αB)/A 
+
+    div_update!(B,/,A)      # B = B/A 
+
+    div_update!(B,α,\\,A)    # B = A\\(αB) 
+
+    div_update!(B,\\,A)      # B = A\\B 
+
+Matrix B is updated inplace. α is scalar. A must be triangular or simpler.     
+"""
+function div_update! 
+end
+
+
 
 for (div, side, fun) in ( ( :/, 'R', :(rdiv!(B,A)) ), 
                           ( :\, 'L', :(ldiv!(A,B)) ) )
@@ -27,4 +44,6 @@ for (div, side, fun) in ( ( :/, 'R', :(rdiv!(B,A)) ),
 end
 
 
+div_update!(B,α,f::Function,A) = ip_error("solve method not available for this combination of types .") 
+div_update!(B,f::Function,A) = ip_error("solve method not available for this combination of types .") 
 
