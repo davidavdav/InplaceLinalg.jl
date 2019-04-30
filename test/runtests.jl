@@ -29,22 +29,23 @@ using Test, LinearAlgebra
 @test @macroexpand(@inplace C = C + A)             == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
 @test @macroexpand(@inplace C = 0.1C + 0.2A)       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
 
-@test @macroexpand(@inplace C = B / A)             == :(InplaceLinalg.C_div!(C, 1, B, $(/), A))
-@test @macroexpand(@inplace C = 2B / A)            == :(InplaceLinalg.C_div!(C, 2, B, $(/), A))
-@test @macroexpand(@inplace C = α * B / A)         == :(InplaceLinalg.C_div!(C, α, B, $(/), A))
-@test @macroexpand(@inplace C = 2π * B / A)        == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
-@test @macroexpand(@inplace C = 2*π * B / A)       == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
-@test @macroexpand(@inplace C = A \ B)             == :(InplaceLinalg.C_div!(C, 1, B, $(\), A))
-@test @macroexpand(@inplace C = A \ 2B)            == :(InplaceLinalg.C_div!(C, 2, B, $(\), A))
-@test @macroexpand(@inplace C = A \ (α * B))         == :(InplaceLinalg.C_div!(C, α, B, $(\), A))
-@test @macroexpand(@inplace C = A \ (2π * B))        == :(InplaceLinalg.C_div!(C, 2π, B, $(\), A))
+@test @macroexpand(@inplace B = B / A)             == :(InplaceLinalg.div_update!(B, 1, /, A))
+#@test @macroexpand(@inplace C = α * B / A)         == :(InplaceLinalg.C_div!(C, α, B, $(/), A))
+#@test @macroexpand(@inplace C = 2π * B / A)        == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
+#@test @macroexpand(@inplace C = 2*π * B / A)       == :(InplaceLinalg.C_div!(C, 2π, B, $(/), A))
+#@test @macroexpand(@inplace C = A \ B)             == :(InplaceLinalg.C_div!(C, 1, B, $(\), A))
+#@test @macroexpand(@inplace C = A \ 2B)            == :(InplaceLinalg.C_div!(C, 2, B, $(\), A))
+#@test @macroexpand(@inplace C = A \ (α * B))         == :(InplaceLinalg.C_div!(C, α, B, $(\), A))
+#@test @macroexpand(@inplace C = A \ (2π * B))        == :(InplaceLinalg.C_div!(C, 2π, B, $(\), A))
 ## can't do @test @macroexpand(@inplace B = A \ 2 * π * B yet...
 
-@test @macroexpand(@inplace C /= A)                == :(InplaceLinalg.C_div!(C, 1, C, $(/), A))
+#@test @macroexpand(@inplace C /= A)                == :(InplaceLinalg.C_div!(C, 1, C, $(/), A))
 
 #@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
-
 #@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
+
+#@test @macroexpand(@inplace C = B / A)             == :((InplaceLinalg.ip_error)("LHS must be equal to numerator in updating divide"))
+#@test @macroexpand(@inplace C = 2B / A)            == :(InplaceLinalg.C_div!(C, 2, B, $(/), A))
 
 A = randn(100, 200)
 B = randn(200, 100)
@@ -123,16 +124,16 @@ C = similar(B0)
 α = randn()
 
 # test basics: \,/; two different inplace behaviours; Upper and Lower triangles
-B = copy(B0); @inplace C = AL \ B
-@test B == B0
-@test C ≈ AL \ B0
+#B = copy(B0); @inplace C = AL \ B
+#@test B == B0
+#@test C ≈ AL \ B0
 
 B = copy(B0); @inplace B = AL \ B
 @test B ≈ AL \ B0
 
-B = copy(B0); @inplace C = B / AR
-@test B == B0
-@test C ≈ B0 / AR
+#B = copy(B0); @inplace C = B / AR
+#@test B == B0
+#@test C ≈ B0 / AR
 
 B = copy(B0); @inplace B = B / AR
 @test B ≈ B0 / AR
@@ -172,16 +173,16 @@ B = copy(B0); @inplace B = rI \ B
 B = copy(B0); @inplace B = B / AR1
 @test B ≈ B0 / AR1
 
-B = copy(B0); @inplace B = B / rI 
-@test B ≈ B0 / rI
+#B = copy(B0); @inplace B = B / rI 
+#@test B ≈ B0 / rI
 
 
 #test Diagonal 
 B = copy(B0); @inplace B = DL \ B
 @test B ≈ DL \ B0
 
-B = copy(B0); @inplace B = B / DR
-@test B ≈ B0 / DR
+#B = copy(B0); @inplace B = B / DR
+#@test B ≈ B0 / DR
 
 #Diagonal solve with prescaling not allowed
 B = copy(B0); 

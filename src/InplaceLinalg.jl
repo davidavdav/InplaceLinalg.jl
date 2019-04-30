@@ -11,12 +11,28 @@ include("error_handling.jl")
 
 
 macro inplace(x)
-    esc(inplace(x))
+    try
+        esc(inplace(x))
+    catch e
+        :(ip_error($(e.msg)))
+    end
 end
 
 function inplace(expr::Expr) 
     #dump(expr)
-    lhs, ass, rhs = assignment(expr)
+    ## parse assignment or err
+    expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] || error("Unknown assignment operator in " * string(expr))
+    lhs, ass, rhs = expr.args[1], expr.head, expr.args[2]
+    isa(lhs, Symbol) || error("LHS should be a symbolic variable")
+    ## select update expressions involving divisions
+    if ass == :(=) && isa(rhs, Expr) && rhs.head == :call && length(rhs.args) == 3
+        if rhs.args[1] == :/
+            num, den = rhs.args[2:3]
+            isa(den, Symbol) || error("Denominator should be a symbolic variable")
+            α, num = divupdate(lhs, num)
+            return :(InplaceLinalg.div_update!($lhs, $α, /, $den))
+        end
+    end
     term1, term2 = terms(rhs)
     if term1 != 0
         β, C = factors(term1, 2)
@@ -59,9 +75,15 @@ function inplace(expr::Expr)
 end
 inplace(x) = x
 
-function assignment(expr::Expr) 
-    @assert expr.head in [:(=), :(+=), :(*=), :(/=), :(-=)] "Unknown assignment operator " * string(expr)
-    return expr.args[1], expr.head, expr.args[2]
+function divupdate(lhs::Symbol, num::Symbol)
+    lhs == num || ip_error("LHS must be equal to numerator in updating divide")
+    return 1, num
+end
+function divupdate(lhs::Symbol, num::Expr)
+    num.head == :call && length(num.args) == 3 && num.args[1] == :* || ip_error("Numerator must be simple multiplicative expression")
+    matches = lhs .== num.args[2:3]
+    sum(matches) == 1 || ip_error("LHS must appear exactly once in multiplicative numerator expression")
+    return tuple(num.args[2 .+ matches]...)
 end
 
 function terms(expr::Expr)
