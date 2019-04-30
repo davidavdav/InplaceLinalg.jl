@@ -141,6 +141,7 @@ include("C_div.jl")
 
 include("extend_ldiv_and_rdiv.jl")
 include("div_update.jl")
+include("mult_update.jl")
 
 
 
