@@ -31,16 +31,20 @@ function inplace(expr::Expr)
             args = divupdate(lhs, num)
             return :(InplaceLinalg.div_update!($(args...), \, $den))
         end
-        ## fall through for other expressions
+        ## fall through for other expressions with :=
     elseif ass == :(/=)
         ## accept any RHS
         return :(InplaceLinalg.div_update!($lhs, /, $rhs))
     end
     term1, term2 = terms(rhs)
+    if ass == :(=) && term1 == 0 
+        n, facs = multupdate(lhs, rhs)
+        n > 0 && return :(InplaceLinalg.mult_update!($lhs, $(facs...), Val($n)))
+    end
     if term1 != 0
         β, C = factors(term1, 2)
         #@assert lhs == C "First term must be linear in the LHS" lhs C
-        lhs ==C || return :(ip_error("First term must be a multiple of the LHS"))
+        lhs == C || return :(ip_error("First term must be a multiple of the LHS"))
     else 
         β = 0
     end
@@ -87,6 +91,16 @@ function terms(expr::Expr)
 end
 terms(x) = 0, x
 
+function multupdate(lhs::Symbol, rhs::Expr)
+    if rhs.head == :call && length(rhs.args) ≤ 4 && rhs.args[1] == :* 
+        factors = rhs.args[2:end]
+        matches = lhs .== factors
+        sum(matches) == 1 && return findfirst(matches), factors[.!matches]
+    end
+    return 0, rhs
+end
+multupdate(lhs::Symbol, rhs) = 0, rhs
+
 function factors(expr::Expr, n=3)
     ret = []
     scalars = []
@@ -132,7 +146,6 @@ C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of 
 C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination of types not implemented.")
 
 include("C_AB.jl")
-include("C_div.jl")
 
 include("extend_ldiv_and_rdiv.jl")
 include("extend_lmul_and_rmul.jl")

@@ -40,6 +40,13 @@ using Test, LinearAlgebra
 
 @test @macroexpand(@inplace B /= A)                == :(InplaceLinalg.div_update!(B, /, A))
 
+@test @macroexpand(@inplace B = B * a * b)         == :(InplaceLinalg.mult_update!(B, a, b, Val(1)))
+@test @macroexpand(@inplace B = a * B * b)         == :(InplaceLinalg.mult_update!(B, a, b, Val(2)))
+@test @macroexpand(@inplace B = a * b * B)         == :(InplaceLinalg.mult_update!(B, a, b, Val(3)))
+@test @macroexpand(@inplace B = B * a)             == :(InplaceLinalg.mult_update!(B, a, Val(1)))
+@test @macroexpand(@inplace B = a * B)             == :(InplaceLinalg.mult_update!(B, a, Val(2)))
+
+
 #@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
 #@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
 
