@@ -135,6 +135,7 @@ include("C_AB.jl")
 include("C_div.jl")
 
 include("extend_ldiv_and_rdiv.jl")
+include("extend_lmul_and_rmul.jl")
 include("div_update.jl")
 include("mult_update.jl")
 
