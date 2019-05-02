@@ -16,6 +16,7 @@ macro inplace(x)
     end
 end
 
+
 function inplace(expr::Expr) 
     #dump(expr)
     ## parse assignment or err
