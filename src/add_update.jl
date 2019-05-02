@@ -15,51 +15,52 @@ do_gemm!(α, TA, A, TB, B::Symmetric, β, C) = BLAS.symm!('R', B.uplo, α, blasn
 
 
 function gemm_αABβC!(α, A, B, β, C::BlasMatrix{T}) where T
-   try 
-        C===A && α==1 && β==0 && return rmul!(A,B)
-        C===B && α==1 && β==0 && return lmul!(A,B)
-        (C===A || C===B) && β≠0 && ip_error("multiplicative and additive updates cannot be combined.")
-        (C===A || C===B) && α≠1 && ip_error("scaled multiplicative update not available for these types.")
+    (C===A || C===B) && ip_error("multiplicative and additive updates cannot be combined.")
+    try 
         α, β = convert.(T, (α, β))
         do_gemm!(α, tr2blas(A)..., tr2blas(B)..., β, C) 
-   catch err
-       err isa InplaceException ? rethrow(err) : ip_error(err)
+    catch err
+       ip_error(err)
    end
 end
 
 
-C_AB!(C::BlasMatrix{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = gemm_αABβC!(α, A, B, β, C)
-C_AB!(C::BlasMatrix{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T = gemm_αABβC!(α, A, B, β, C)
-C_AB!(C::BlasMatrix{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T = gemm_αABβC!(α, A, B, β, C)
+for (pm,sα) in ( (:+, α), (:-, -α) )
+    @eval begin
+        add_update!(C::BlasMatrix{T}, β::Number, ::typeof($pm), α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = 
+            gemm_αABβC!($sα, A, B, β, C)
+        #
+        add_update!(C::BlasMatrix{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T = 
+            gemm_αABβC!($sα, A, B, β, C)
+        #
+        add_update!(C::BlasMatrix{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T = 
+            gemm_αABβC!($sα, A, B, β, C)
+        #
+    end
+end
 
 
 # AXPY and AXPBY and copyto!  ===================================================================== 
-
-function C_AB!(y::AxpyVec{T}, β::Number, α1::Number, α2::Number, x::AxpyVec{T}) where T 
-    α = α1*α2
-    try 
-        α, β = convert.(T, (α, β))
-        β==0 && α==1 && return copyto!(y,x)
-        β==1 ? BLAS.axpy!(α,x,y) : BLAS.axpby!(α,x,β,y)  
-    catch err
-        ip_error(err)
-    end 
+for (pm,sα) in ( (:+, α), (:-, -α) )
+    @eval begin
+        function add_update!(y::AxpyVec{T}, β::Number, ::typeof($pm), α::Number, x::AxpyVec{T}) where T 
+            try 
+                α, β = convert.(T, ($sα, β))
+                β==0 && α==1 && return copyto!(y,x)
+                β==1 ? BLAS.axpy!(α,x,y) : BLAS.axpby!(α,x,β,y)  
+            catch err
+                ip_error(err)
+            end 
+        end
+    end
 end
+add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number) where T = 
+    add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number)
+#
 
 
 # GEMV and SYMV =====================================================================================
 import LinearAlgebra: lmul!,rmul!
-function rmul!(A::AbstractVector, D::Diagonal)
-    @assert !LinearAlgebra.has_offset_axes(A)
-    A .= A .* transpose(D.diag)
-    return A
-end
-
-function lmul!(D::Diagonal, B::AbstractVector)
-    @assert !LinearAlgebra.has_offset_axes(B)
-    B .= D.diag .* B
-    return B
-end
 
 do_gemv!(α, TA, A, B, β, C) = BLAS.gemv!(TA, α, A, B, β, C)      # C ← αAB + βC  (with transposition as specified)
 do_gemv!(α, TA, A::Symmetric, B, β, C) = BLAS.symv!(A.uplo, α, blasnode(A), B, β, C)
@@ -79,9 +80,9 @@ function gemv_αABβC!(α, A, B, β, C::BlasVector{T}) where T
 end
 
 
-C_AB!(C::BlasVector{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasVector{T}) where T = gemv_αABβC!(α, A, B, β, C)
-C_AB!(C::BlasVector{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasVector{T}) where T = gemv_αABβC!(α, A, B, β, C)
-C_AB!(C::BlasVector{T}, β::Number, A::BlasMatrix{T}, B::BlasVector{T}, α::Number) where T = gemv_αABβC!(α, A, B, β, C)
+add_update!(C::BlasVector{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasVector{T}) where T = gemv_αABβC!(α, A, B, β, C)
+add_update!(C::BlasVector{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasVector{T}) where T = gemv_αABβC!(α, A, B, β, C)
+add_update!(C::BlasVector{T}, β::Number, A::BlasMatrix{T}, B::BlasVector{T}, α::Number) where T = gemv_αABβC!(α, A, B, β, C)
 
 
 # SYRK =============================================
@@ -100,9 +101,9 @@ function do_syrk!(α, A, B, β, C::Symmetric{T}) where T
     end
 end
 
-C_AB!(C::Symmetric{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = do_syrk!(α, A, B, β, C)
-C_AB!(C::Symmetric{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T = do_syrk!(α, A, B, β, C)
-C_AB!(C::Symmetric{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T = do_syrk!(α, A, B, β, C)
+add_update!(C::Symmetric{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = do_syrk!(α, A, B, β, C)
+add_update!(C::Symmetric{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T = do_syrk!(α, A, B, β, C)
+add_update!(C::Symmetric{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T = do_syrk!(α, A, B, β, C)
 
 # HERK =============================================
 function do_herk!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
@@ -120,13 +121,13 @@ function do_herk!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
     end
 end
 
-C_AB!(C::Hermitian{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T <: Complex = 
+add_update!(C::Hermitian{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T <: Complex = 
     do_herk!(α, A, B, β, C)
 #
-C_AB!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T <: Complex = 
+add_update!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T <: Complex = 
     do_herk!(α, A, B, β, C)
 #
-C_AB!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T <: Complex = 
+add_update!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T <: Complex = 
     do_herk!(α, A, B, β, C)
 #
 
@@ -148,9 +149,9 @@ function do_syr!(α, A, B, β, C::Symmetric{T}) where T
     end
 end
 
-C_AB!(C::Symmetric{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasRow{T}) where T = do_syr!(α, A, B, β, C)
-C_AB!(C::Symmetric{T}, β::Number, A::BlasVector{T}, α::Number, B::BlasRow{T}) where T = do_syr!(α, A, B, β, C)
-C_AB!(C::Symmetric{T}, β::Number, A::BlasVector{T}, B::BlasRow{T}, α::Number) where T = do_syr!(α, A, B, β, C)
+add_update!(C::Symmetric{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasRow{T}) where T = do_syr!(α, A, B, β, C)
+add_update!(C::Symmetric{T}, β::Number, A::BlasVector{T}, α::Number, B::BlasRow{T}) where T = do_syr!(α, A, B, β, C)
+add_update!(C::Symmetric{T}, β::Number, A::BlasVector{T}, B::BlasRow{T}, α::Number) where T = do_syr!(α, A, B, β, C)
 
 # HER =============================================
 function do_her!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
@@ -165,13 +166,13 @@ function do_her!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
     end
 end
 
-C_AB!(C::Hermitian{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasAdjRow{T}) where T <: Complex = 
+add_update!(C::Hermitian{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasAdjRow{T}) where T <: Complex = 
     do_her!(α, A, B, β, C)
 #    
-C_AB!(C::Hermitian{T}, β::Number, A::BlasVector{T}, α::Number, B::BlasAdjRow{T}) where T <: Complex = 
+add_update!(C::Hermitian{T}, β::Number, A::BlasVector{T}, α::Number, B::BlasAdjRow{T}) where T <: Complex = 
     do_her!(α, A, B, β, C)
 #    
-C_AB!(C::Hermitian{T}, β::Number, A::BlasVector{T}, B::BlasAdjRow{T}, α::Number) where T <: Complex = 
+add_update!(C::Hermitian{T}, β::Number, A::BlasVector{T}, B::BlasAdjRow{T}, α::Number) where T <: Complex = 
     do_her!(α, A, B, β, C)
 #    
 

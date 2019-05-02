@@ -46,18 +46,6 @@ end
 
 
 # GEMV and SYMV =====================================================================================
-import LinearAlgebra: lmul!,rmul!
-function rmul!(A::AbstractVector, D::Diagonal)
-    @assert !LinearAlgebra.has_offset_axes(A)
-    A .= A .* transpose(D.diag)
-    return A
-end
-
-function lmul!(D::Diagonal, B::AbstractVector)
-    @assert !LinearAlgebra.has_offset_axes(B)
-    B .= D.diag .* B
-    return B
-end
 
 do_gemv!(α, TA, A, B, β, C) = BLAS.gemv!(TA, α, A, B, β, C)      # C ← αAB + βC  (with transposition as specified)
 do_gemv!(α, TA, A::Symmetric, B, β, C) = BLAS.symv!(A.uplo, α, blasnode(A), B, β, C)

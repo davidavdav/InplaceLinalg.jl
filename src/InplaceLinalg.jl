@@ -136,11 +136,12 @@ quotient(x) = 1, x, nothing, nothing
 C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
 C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination of types not implemented.")
 
+include("extend_ldiv_and_rdiv.jl")
+include("extend_lmul_and_rmul.jl")
+
 include("C_AB.jl")
 include("C_div.jl")
 
-include("extend_ldiv_and_rdiv.jl")
-include("extend_lmul_and_rmul.jl")
 include("div_update.jl")
 include("mult_update.jl")
 
