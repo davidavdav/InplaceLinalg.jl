@@ -16,6 +16,7 @@ macro inplace(x)
     end
 end
 
+
 function inplace(expr::Expr) 
     #dump(expr)
     ## parse assignment or err
@@ -162,14 +163,19 @@ negate(x) = :(-$x)
 
 
 
-C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
-
-include("C_AB.jl")
+#C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
+#C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination of types not implemented.")
 
 include("extend_ldiv_and_rdiv.jl")
 include("extend_lmul_and_rmul.jl")
+
+#include("C_AB.jl")
+C_AB!(C, β, α, A, B) = add_update!(C, β, +, α, A, B)
+
+
 include("div_update.jl")
 include("mult_update.jl")
+include("add_update.jl")
 
 
 
