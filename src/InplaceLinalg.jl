@@ -20,6 +20,12 @@ function inplace(expr::Expr)
     #dump(expr)
     ## parse assignment or err
     lhs, ass, rhs = assignment(expr)
+    if ass == :(*=)
+        return :(InplaceLinalg.mult_update!($lhs, $rhs, Val(1)))
+    elseif ass == :(/=)
+        ## accept any RHS
+        return :(InplaceLinalg.div_update!($lhs, /, $rhs))
+    end
     ## select update expressions involving divisions
     if ass == :(=) && isa(rhs, Expr) && rhs.head == :call && length(rhs.args) == 3
         if rhs.args[1] == :/
@@ -32,9 +38,6 @@ function inplace(expr::Expr)
             return :(InplaceLinalg.div_update!($(args...), \, $den))
         end
         ## fall through for other expressions with :=
-    elseif ass == :(/=)
-        ## accept any RHS
-        return :(InplaceLinalg.div_update!($lhs, /, $rhs))
     end
     term1, term2 = terms(rhs)
     if ass == :(=) && term1 == 0 

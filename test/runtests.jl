@@ -29,6 +29,10 @@ using Test, LinearAlgebra
 @test @macroexpand(@inplace C = C + A)             == :(InplaceLinalg.C_AB!(C, 1, 1, 1, A))
 @test @macroexpand(@inplace C = 0.1C + 0.2A)       == :(InplaceLinalg.C_AB!(C, 0.1, 1, 0.2, A))
 
+@test @macroexpand(@inplace B *= A)                == :(InplaceLinalg.mult_update!(B, A, Val(1)))
+
+@test @macroexpand(@inplace B /= A)                == :(InplaceLinalg.div_update!(B, /, A))
+
 @test @macroexpand(@inplace B = B / A)             == :(InplaceLinalg.div_update!(B, /, A))
 @test @macroexpand(@inplace B = α * B / A)         == :(InplaceLinalg.div_update!(B, α, /, A))
 @test @macroexpand(@inplace B = 2π * B / A)        == :(InplaceLinalg.div_update!(B, 2π, /, A))
@@ -38,14 +42,11 @@ using Test, LinearAlgebra
 @test @macroexpand(@inplace B = A \ (α * B))       == :(InplaceLinalg.div_update!(B, α, \, A))
 @test @macroexpand(@inplace B = A \ (2π * B))      == :(InplaceLinalg.div_update!(B, 2π, \, A))
 
-@test @macroexpand(@inplace B /= A)                == :(InplaceLinalg.div_update!(B, /, A))
-
 @test @macroexpand(@inplace B = B * a * b)         == :(InplaceLinalg.mult_update!(B, a, b, Val(1)))
 @test @macroexpand(@inplace B = a * B * b)         == :(InplaceLinalg.mult_update!(B, a, b, Val(2)))
 @test @macroexpand(@inplace B = a * b * B)         == :(InplaceLinalg.mult_update!(B, a, b, Val(3)))
 @test @macroexpand(@inplace B = B * a)             == :(InplaceLinalg.mult_update!(B, a, Val(1)))
 @test @macroexpand(@inplace B = a * B)             == :(InplaceLinalg.mult_update!(B, a, Val(2)))
-
 
 #@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
 #@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
