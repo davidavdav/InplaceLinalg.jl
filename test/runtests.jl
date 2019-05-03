@@ -244,7 +244,7 @@ B = copy(B0); @inplace B = rI \ B
 
 #scaling is disallowed
 @test_throws Exception @inplace B = AL \ α*B
-@test_throws InplaceException @inplace B = AL \ B*α
+@test_throws Exception @inplace B = AL \ B*α
 @test_throws InplaceException @inplace B = AL \ 2B
 @test_throws Exception @inplace B = AL \ 2*B
 
