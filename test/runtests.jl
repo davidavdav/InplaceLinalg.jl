@@ -126,20 +126,13 @@ AR1 = UnitUpperTriangular(randn(n,n))
 DL = Diagonal(randn(m))
 DR = Diagonal(randn(n))
 rI = UniformScaling(randn())
-C = similar(B0)
 α = randn()
 
-# test basics: \,/; two different inplace behaviours; Upper and Lower triangles
-#B = copy(B0); @inplace C = AL \ B
-#@test B == B0
-#@test C ≈ AL \ B0
+# test basics: \,/; Upper and Lower triangles
 
 B = copy(B0); @inplace B = AL \ B
 @test B ≈ AL \ B0
 
-#B = copy(B0); @inplace C = B / AR
-#@test B == B0
-#@test C ≈ B0 / AR
 
 B = copy(B0); @inplace B = B / AR
 @test B ≈ B0 / AR
@@ -173,22 +166,22 @@ B = copy(B0); @inplace B = 2*B / AR
 B = copy(B0); @inplace B = AL1 \ B
 @test B ≈ AL1 \ B0
 
-#B = copy(B0); @inplace B = rI \ B
-#@test B ≈ rI \ B0
+B = copy(B0); @inplace B = rI \ B
+@test B ≈ rI \ B0
 
 B = copy(B0); @inplace B = B / AR1
 @test B ≈ B0 / AR1
 
-#B = copy(B0); @inplace B = B / rI 
-#@test B ≈ B0 / rI
+B = copy(B0); @inplace B = B / rI 
+@test B ≈ B0 / rI
 
 
 #test Diagonal 
-#B = copy(B0); @inplace B = DL \ B
-#@test B ≈ DL \ B0
+B = copy(B0); @inplace B = DL \ B
+@test B ≈ DL \ B0
 
-#B = copy(B0); @inplace B = B / DR
-#@test B ≈ B0 / DR
+B = copy(B0); @inplace B = B / DR
+@test B ≈ B0 / DR
 
 #Diagonal solve with prescaling not allowed
 B = copy(B0); 
@@ -228,38 +221,34 @@ AU = UpperTriangular(randn(m,m))
 AL1 = UnitLowerTriangular(randn(m,m))
 AU1 = UnitUpperTriangular(randn(m,m))
 rI = UniformScaling(randn())
-C = similar(B0)
 α = randn()
 
-# test basics: two different inplace behaviours; triangle variants
-#B = copy(B0); @inplace C = AL \ B
-#@test B == B0
-#@test C ≈ AL \ B0
+# test basics: triangle variants
 
-#B = copy(B0); @inplace B = AL \ B
-#@test B ≈ AL \ B0
+B = copy(B0); @inplace B = AL \ B
+@test B ≈ AL \ B0
 
-#B = copy(B0); @inplace B = AU \ B
-#@test B ≈ AU \ B0
+B = copy(B0); @inplace B = AU \ B
+@test B ≈ AU \ B0
 
-#B = copy(B0); @inplace B = AL1 \ B
-#@test B ≈ AL1 \ B0
+B = copy(B0); @inplace B = AL1 \ B
+@test B ≈ AL1 \ B0
 
-#B = copy(B0); @inplace B = AU1 \ B
-#@test B ≈ AU1 \ B0
+B = copy(B0); @inplace B = AU1 \ B
+@test B ≈ AU1 \ B0
 
-#B = copy(B0); @inplace B = rI \ B
-#@test B ≈ rI \ B0
+B = copy(B0); @inplace B = rI \ B
+@test B ≈ rI \ B0
 
 
 #scaling is disallowed
-#@test_throws InplaceException @inplace B = AL \ α*B
-#@test_throws InplaceException @inplace B = AL \ B*α
-#@test_throws InplaceException @inplace B = AL \ 2B
-#@test_throws InplaceException @inplace B = AL \ 2*B
+@test_throws Exception @inplace B = AL \ α*B
+@test_throws InplaceException @inplace B = AL \ B*α
+@test_throws InplaceException @inplace B = AL \ 2B
+@test_throws Exception @inplace B = AL \ 2*B
 
 # this too ...
-#@test_throws InplaceException @inplace B = B \ AL
+@test_throws InplaceException @inplace B = B \ AL
 
 
 

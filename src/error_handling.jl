@@ -17,6 +17,7 @@ function showerror(io::IO, e::InplaceException2)
     println(io, "Try some other combination, or try plain Julia.")
     println(io, "The original exception was:")
     showerror(io::IO, e.blas_error)
+    stacktrace(catch_backtrace())
 end
 
 

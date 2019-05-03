@@ -25,7 +25,7 @@ function gemm_αABβC!(α, A, B, β, C::BlasMatrix{T}) where T
 end
 
 
-for (pm,sα) in ( (:+, α), (:-, -α) )
+for (pm, sα) in ( (:+, :α), (:-, :(-α)) )
     @eval begin
         add_update!(C::BlasMatrix{T}, β::Number, ::typeof($pm), α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = 
             gemm_αABβC!($sα, A, B, β, C)
@@ -41,12 +41,12 @@ end
 
 
 # AXPY and AXPBY and copyto!  ===================================================================== 
-for (pm,sα) in ( (:+, α), (:-, -α) )
+for (pm,sα) in ( (:+, :α), (:-, :(-α)) )
     @eval begin
         function add_update!(y::AxpyVec{T}, β::Number, ::typeof($pm), α::Number, x::AxpyVec{T}) where T 
             try 
-                α, β = convert.(T, ($sα, β))
                 β==0 && α==1 && return copyto!(y,x)
+                α, β = convert.(T, ($sα, β))
                 β==1 ? BLAS.axpy!(α,x,y) : BLAS.axpby!(α,x,β,y)  
             catch err
                 ip_error(err)
@@ -55,7 +55,7 @@ for (pm,sα) in ( (:+, α), (:-, -α) )
     end
 end
 add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number) where T = 
-    add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number)
+    add_update!(y::AxpyVec{T}, β::Number, pm::Function, α::Number, x::AxpyVec{T})
 #
 
 
@@ -67,22 +67,28 @@ do_gemv!(α, TA, A::Symmetric, B, β, C) = BLAS.symv!(A.uplo, α, blasnode(A), B
 
 
 function gemv_αABβC!(α, A, B, β, C::BlasVector{T}) where T
+    (C===A || C===B) && ip_error("multiplicative and additive updates cannot be combined.")
     try 
-        C===A && α==1 && β==0 && return rmul!(A,B)
-        C===B && α==1 && β==0 && return lmul!(A,B)
-        (C===A || C===B) && β≠0 && ip_error("multiplicative and additive updates cannot be combined.")
-        (C===A || C===B) && α≠1 && ip_error("scaled multiplicative update not available for these types (α==1 required).")
         α, β = convert.(T, (α, β))
         do_gemv!(α, tr2blas(A)..., B, β, C) 
     catch err
-        err isa InplaceException ? rethrow(err) : ip_error(err)
+        ip_error(err)
     end
 end
 
-
-add_update!(C::BlasVector{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasVector{T}) where T = gemv_αABβC!(α, A, B, β, C)
-add_update!(C::BlasVector{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasVector{T}) where T = gemv_αABβC!(α, A, B, β, C)
-add_update!(C::BlasVector{T}, β::Number, A::BlasMatrix{T}, B::BlasVector{T}, α::Number) where T = gemv_αABβC!(α, A, B, β, C)
+for (pm, sα) in ( (:+, :α), (:-, :(-α)) )
+    @eval begin
+        add_update!(C::BlasVector{T}, β::Number, ::typeof($pm), α::Number, A::BlasMatrix{T}, B::BlasVector{T}) where T = 
+            gemv_αABβC!($sa, A, B, β, C)
+        #
+        add_update!(C::BlasVector{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, α::Number, B::BlasVector{T}) where T = 
+            gemv_αABβC!($sa, A, B, β, C)
+        #
+        add_update!(C::BlasVector{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, B::BlasVector{T}, α::Number) where T = 
+            gemv_αABβC!($sa, A, B, β, C)
+        #
+    end
+end
 
 
 # SYRK =============================================
@@ -101,9 +107,19 @@ function do_syrk!(α, A, B, β, C::Symmetric{T}) where T
     end
 end
 
-add_update!(C::Symmetric{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = do_syrk!(α, A, B, β, C)
-add_update!(C::Symmetric{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T = do_syrk!(α, A, B, β, C)
-add_update!(C::Symmetric{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T = do_syrk!(α, A, B, β, C)
+for (pm, sα) in ( (:+, :α), (:-, :(-α)) )
+    @eval begin
+        add_update!(C::Symmetric{T}, β::Number, ::typeof($pm), α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T =
+            do_syrk!($sα, A, B, β, C)
+        #
+        add_update!(C::Symmetric{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T =
+            do_syrk!($sα, A, B, β, C)
+        #
+        add_update!(C::Symmetric{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T =
+            do_syrk!($sα, A, B, β, C)
+        #
+    end
+end
 
 # HERK =============================================
 function do_herk!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
@@ -121,15 +137,19 @@ function do_herk!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
     end
 end
 
-add_update!(C::Hermitian{T}, β::Number, α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T <: Complex = 
-    do_herk!(α, A, B, β, C)
-#
-add_update!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T <: Complex = 
-    do_herk!(α, A, B, β, C)
-#
-add_update!(C::Hermitian{T}, β::Number, A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T <: Complex = 
-    do_herk!(α, A, B, β, C)
-#
+for (pm, sα) in ( (:+, :α), (:-, :(-α)) )
+    @eval begin
+        add_update!(C::Hermitian{T}, β::Number, ::typeof($pm), α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T <: Complex = 
+            do_herk!($sα, A, B, β, C)
+        #
+        add_update!(C::Hermitian{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, α::Number, B::BlasMatrix{T}) where T <: Complex = 
+            do_herk!($sα, A, B, β, C)
+        #
+        add_update!(C::Hermitian{T}, β::Number, ::typeof($pm), A::BlasMatrix{T}, B::BlasMatrix{T}, α::Number) where T <: Complex = 
+            do_herk!($sα, A, B, β, C)
+        #
+    end
+end
 
 
 
@@ -149,9 +169,20 @@ function do_syr!(α, A, B, β, C::Symmetric{T}) where T
     end
 end
 
-add_update!(C::Symmetric{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasRow{T}) where T = do_syr!(α, A, B, β, C)
-add_update!(C::Symmetric{T}, β::Number, A::BlasVector{T}, α::Number, B::BlasRow{T}) where T = do_syr!(α, A, B, β, C)
-add_update!(C::Symmetric{T}, β::Number, A::BlasVector{T}, B::BlasRow{T}, α::Number) where T = do_syr!(α, A, B, β, C)
+for (pm, sα) in ( (:+, :α), (:-, :(-α)) )
+    @eval begin
+        add_update!(C::Symmetric{T}, β::Number, ::typeof($pm), α::Number, A::BlasVector{T}, B::BlasRow{T}) where T = 
+            do_syr!($sα, A, B, β, C)
+        #
+        add_update!(C::Symmetric{T}, β::Number, ::typeof($pm), A::BlasVector{T}, α::Number, B::BlasRow{T}) where T = 
+            do_syr!($sα, A, B, β, C)
+        #
+        add_update!(C::Symmetric{T}, β::Number, ::typeof($pm), A::BlasVector{T}, B::BlasRow{T}, α::Number) where T = 
+            do_syr!($sα, A, B, β, C)
+        #
+    end
+end
+
 
 # HER =============================================
 function do_her!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
@@ -166,15 +197,22 @@ function do_her!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
     end
 end
 
-add_update!(C::Hermitian{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasAdjRow{T}) where T <: Complex = 
-    do_her!(α, A, B, β, C)
-#    
-add_update!(C::Hermitian{T}, β::Number, A::BlasVector{T}, α::Number, B::BlasAdjRow{T}) where T <: Complex = 
-    do_her!(α, A, B, β, C)
-#    
-add_update!(C::Hermitian{T}, β::Number, A::BlasVector{T}, B::BlasAdjRow{T}, α::Number) where T <: Complex = 
-    do_her!(α, A, B, β, C)
-#    
+for (pm, sα) in ( (:+, :α), (:-, :(-α)) )
+    @eval begin
+        add_update!(C::Hermitian{T}, β::Number, ::typeof($pm), α::Number, A::BlasVector{T}, 
+                    B::BlasAdjRow{T}) where T <: Complex = 
+            do_her!($sα, A, B, β, C)
+        #    
+        add_update!(C::Hermitian{T}, β::Number, ::typeof($pm), A::BlasVector{T}, α::Number, 
+                    B::BlasAdjRow{T}) where T <: Complex = 
+            do_her!($sα, A, B, β, C)
+        #    
+        add_update!(C::Hermitian{T}, β::Number, ::typeof($pm), A::BlasVector{T}, B::BlasAdjRow{T}, 
+                    α::Number) where T <: Complex = 
+            do_her!($sα, A, B, β, C)
+        #    
+    end
+end
 
 
 
