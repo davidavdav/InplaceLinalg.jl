@@ -171,4 +171,3 @@ end
 
 
 
-C_AB!(C, β, α, A, B) = add_update!(C, β, +, α, A, B)

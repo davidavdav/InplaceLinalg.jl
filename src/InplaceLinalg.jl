@@ -153,10 +153,13 @@ include("extend_ldiv_and_rdiv.jl")
 include("extend_lmul_and_rmul.jl")
 
 #include("C_AB.jl")
+C_AB!(C, β, α, A, B) = add_update!(C, β, +, α, A, B)
+
 
 include("div_update.jl")
 include("mult_update.jl")
 include("add_update.jl")
+
 
 
 end # module
