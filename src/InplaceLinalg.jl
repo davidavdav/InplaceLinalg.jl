@@ -146,7 +146,6 @@ negate(x) = :(-$x)
 
 
 C_AB!(C, β, α, A, B) = ip_error(": inplace assignment for this combination of types not implemented.")
-C_div!(C, α, B, div, A) = ip_error(": inplace assignment for this combination of types not implemented.")
 
 include("C_AB.jl")
 
