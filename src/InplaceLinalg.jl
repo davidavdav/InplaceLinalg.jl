@@ -97,7 +97,7 @@ terms(x) = 0, x
 
 function multupdate(lhs::Symbol, rhs::Expr)
     if rhs.head == :call && length(rhs.args) ≤ 4 && rhs.args[1] == :* 
-        factors = checksigns(rhs.args[2:end])
+        factors = checksigns(flatten_mult(rhs.args[2:end]))
         matches = lhs .== factors
         sum(matches) == 1 && return findfirst(matches), factors[.!matches]
     end
@@ -120,7 +120,28 @@ function checksigns(a::Vector)
     return ret
 end
 
-
+function flatten_mult(factors::Vector)
+    ret = []
+    for factor in factors
+        expanded = flatten_mult(factor)
+        if isa(expanded, Array)
+            for fac in expanded
+                push!(ret, fac)
+            end     
+        else
+            push!(ret, expanded)
+        end
+    end
+    return ret
+end
+function flatten_mult(expr::Expr)
+    if expr.head == :call && length(expr.args) > 2 && expr.args[1] == :*
+        return flatten_mult(expr.args[2:end])
+    else
+        return expr
+    end
+end
+flatten_mult(x) = x
 
 function factors(expr::Expr, n=3)
     ret = []

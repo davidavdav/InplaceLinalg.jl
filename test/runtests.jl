@@ -49,8 +49,15 @@ using Test, LinearAlgebra
 @test @macroexpand(@inplace B = a * B)             == :(InplaceLinalg.mult_update!(B, a, Val(2)))
 
 ## esoteric cases
-@test @macroexpand(@inplace B = -B*A)              == :(InplaceLinalg.mult_update!(B, -1, A, Val(2)))
+@test @macroexpand(@inplace B = A*-B)              == :(InplaceLinalg.mult_update!(B, -1, A, Val(3)))
 @test @macroexpand(@inplace B = -A*B)              == :(InplaceLinalg.mult_update!(B, -1, A, Val(3)))
+@test @macroexpand(@inplace B = -2A*B)             == :(InplaceLinalg.mult_update!(B, -2, A, Val(3)))
+@test @macroexpand(@inplace B = 2A*B)              == :(InplaceLinalg.mult_update!(B, 2, A, Val(3)))
+
+@test @macroexpand(@inplace B = -B*A)              == :(InplaceLinalg.mult_update!(B, -1, A, Val(2)))
+@test @macroexpand(@inplace B = B*-A)              == :(InplaceLinalg.mult_update!(B, -1, A, Val(2)))
+@test @macroexpand(@inplace B = B*-2A)             == :(InplaceLinalg.mult_update!(B, -2, A, Val(1)))
+
 
 #@test_throws InplaceException try @eval @macroexpand(@inplace C += A \ B) catch err; throw(err.error) end
 #@test_throws InplaceException try @eval @inplace(C += B / A) catch err; throw(err.error) end
