@@ -191,10 +191,26 @@ include("extend_ldiv_and_rdiv.jl")
 include("extend_lmul_and_rmul.jl")
 
 #include("C_AB.jl")
-C_AB!(C, β, α, A, B) = add_update!(C, β, +, α, A, B)
-add_update!(C, β::Number, pm::Function, a::Number, b::Number, A::BlasArray) = add_upddate!(C,β,a*b,A)
-add_update!(C, β::Number, pm::Function, a::Number, A::BlasArray, b::Number) = add_upddate!(C,β,a*b,A)
-add_update!(C, β::Number, pm::Function, A::BlasArray, a::Number, b::Number) = add_upddate!(C,β,a*b,A)
+
+isnumber(x) = false
+isnumber(x::Number) = true
+function reduce_factors(f...)
+    ff = collect(f)
+    num = filter(isnumber,ff)
+    isempty(num) && return f
+    p = prod(num)
+    not_num = filter(!isnumber,ff)
+    p==1 && return tuple(not_num...)
+    return tuple(p, not_num...)
+end
+
+
+C_AB!(C, β, α, A, B) = add_update!(C, β, +, reduce_factors(α, A, B)...)
+add_update!(C, β::Number, pm::Function) = add_update(C, β, pm, 1)
+
+#Do we want the following error behaviour, or do we just go ahead and do the broadcast?
+add_update!(C, ::Number, ::Function, ::Number) = ip_error("additive update, with scalar RHS not available. Use broadcasting instead.")
+
 
 include("div_update.jl")
 include("mult_update.jl")

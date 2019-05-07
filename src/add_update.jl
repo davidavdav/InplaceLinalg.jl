@@ -49,6 +49,9 @@ end
 add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number) where T = 
     add_update!(y::AxpyVec{T}, β::Number, pm::Function, α::Number, x::AxpyVec{T})
 #
+add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}) where T = 
+    add_update!(y::AxpyVec{T}, β::Number, pm::Function, 1, x::AxpyVec{T})
+#
 
 
 # GEMV and SYMV =====================================================================================
