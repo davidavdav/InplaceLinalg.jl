@@ -1,3 +1,6 @@
+error("This code should not be included")
+
+
 tr2blas(X::BlasArray) = 'N', X
 tr2blas(X::BlasTranspose) = 'T', parent(X)
 tr2blas(X::BlasAdjoint) = 'C', parent(X)

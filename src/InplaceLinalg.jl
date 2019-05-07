@@ -154,7 +154,9 @@ include("extend_lmul_and_rmul.jl")
 
 #include("C_AB.jl")
 C_AB!(C, β, α, A, B) = add_update!(C, β, +, α, A, B)
-
+add_update!(C, β::Number, pm::Function, a::Number, b::Number, A::BlasArray) = add_upddate!(C,β,a*b,A)
+add_update!(C, β::Number, pm::Function, a::Number, A::BlasArray, b::Number) = add_upddate!(C,β,a*b,A)
+add_update!(C, β::Number, pm::Function, A::BlasArray, a::Number, b::Number) = add_upddate!(C,β,a*b,A)
 
 include("div_update.jl")
 include("mult_update.jl")

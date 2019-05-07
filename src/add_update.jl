@@ -15,7 +15,7 @@ do_gemm!(α, TA, A, TB, B::Symmetric, β, C) = BLAS.symm!('R', B.uplo, α, blasn
 
 
 function gemm_αABβC!(α, A, B, β, C::BlasMatrix{T}) where T
-    (C===A || C===B) && ip_error("multiplicative and additive updates cannot be combined.")
+    (C===blasnode(A) || C===blasnode(B)) && ip_error("multiplicative and additive updates cannot be combined.")
     try 
         α, β = convert.(T, (α, β))
         do_gemm!(α, tr2blas(A)..., tr2blas(B)..., β, C) 
@@ -28,6 +28,8 @@ end
 add_update0!(C::BlasMatrix{T}, β::Number,  α::Number, A::BlasMatrix{T}, B::BlasMatrix{T}) where T = 
     gemm_αABβC!(α, A, B, β, C)
 #
+
+
 
 
 # AXPY and AXPBY and copyto!  ===================================================================== 
@@ -57,7 +59,7 @@ do_gemv!(α, TA, A::Symmetric, B, β, C) = BLAS.symv!(A.uplo, α, blasnode(A), B
 
 
 function gemv_αABβC!(α, A, B, β, C::BlasVector{T}) where T
-    (C===A || C===B) && ip_error("multiplicative and additive updates cannot be combined.")
+    (C===blasnode(A) || C===blasnode(B)) && ip_error("multiplicative and additive updates cannot be combined.")
     try 
         α, β = convert.(T, (α, β))
         do_gemv!(α, tr2blas(A)..., B, β, C) 
@@ -136,7 +138,7 @@ add_update0!(C::Symmetric{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasR
 
 # HER =============================================
 function do_her!(α, A, B, β, C::Hermitian{T}) where T  <: Complex{F} where F
-    β==1 || ip_error("symmetric rank 1 update cannot prescale LHS (β==1 required).")
+    β==1 || ip_error("Hermitian rank 1 update cannot prescale LHS (β==1 required).")
     A===parent(B) || ip_error("conditions violated for update to Hermitian LHS.")
     try 
         α = convert(F, α)
@@ -155,7 +157,7 @@ add_update0!(C::Hermitian{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasA
 
 add_update!(C, β, pm::Function, α, A, B) = ip_error("inplace assignment not available for this combination of types.")
 add_update0!(C, β::Number, α::Number, A, B) = ip_error("inplace assignment not available for this combination of types.")
-for (pm, sα) in ( (:(+), :(α)), (:(-), :(-α)) )
+for (pm, sα, s) in ( (:+, :α, 1), (:-, :(-α), -1) )
     @eval begin
         add_update!(C, β::Number, ::typeof($pm), α::Number, A, B) = 
             add_update0!(C, β, $sα, A, B) 
@@ -166,6 +168,12 @@ for (pm, sα) in ( (:(+), :(α)), (:(-), :(-α)) )
         add_update!(C, β::Number, ::typeof($pm), A, B, α::Number) = 
             add_update0!(C, β, $sα, A, B) 
         #
+
+        add_update!(C::BlasMatrix{T}, β::Number, ::typeof($pm), A::BlasArray{T}, B::BlasArray{T}) where T = 
+            add_update0!(C, β, $s, A, B)
+        #
+
+
     end
 end
 
