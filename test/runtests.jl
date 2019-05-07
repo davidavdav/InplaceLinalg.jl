@@ -195,6 +195,7 @@ B = copy(B0); @inplace B = DL \ B
 B = copy(B0); @inplace B = B / DR
 @test B ≈ B0 / DR
 
+
 #Diagonal solve with prescaling not allowed
 B = copy(B0); 
 @test_throws InplaceException @inplace B = DL \ 2B
@@ -255,7 +256,7 @@ B = copy(B0); @inplace B = rI \ B
 
 #scaling is disallowed
 @test_throws Exception @inplace B = AL \ α*B
-@test_throws Exception @inplace B = AL \ B*α
+#@test_throws Exception @inplace B = AL \ B*α
 @test_throws InplaceException @inplace B = AL \ 2B
 @test_throws Exception @inplace B = AL \ 2*B
 
@@ -263,5 +264,59 @@ B = copy(B0); @inplace B = rI \ B
 @test_throws InplaceException @inplace B = B \ AL
 
 
+# AXPY!, AXPBY! and copyto!
+α = randn()
+β = randn()
+m = 3
+x = randn(m)
+y = randn(m)
+y0 = copy(y)
+
+y = copy(y0)
+@inplace y += x
+@test y ≈ x + y0
+
+y = copy(y0)
+@inplace y += 2x
+@test y ≈ 2x + y0
+
+y = copy(y0)
+@inplace y += α*x
+@test y ≈ α*x + y0
+
+y = copy(y0)
+@inplace y -= α*x
+@test y ≈ y0 - α*x 
+
+y = copy(y0)
+@inplace y = α*x
+@test y ≈ α*x 
+
+y = copy(y0)
+@inplace y = 2x
+@test y ≈ 2x
+
+y = copy(y0)
+@inplace y = x
+@test y == x 
+@test !(y === x) 
 
 
+#test scalar multiplication and division
+B = copy(B0); @inplace B *= 2
+@test B ≈ 2*B0 
+
+B = copy(B0); @inplace B = B*2
+@test B ≈ 2*B0 
+
+B = copy(B0); @inplace B = 2*B
+@test B ≈ 2*B0 
+
+B = copy(B0); @inplace B /= 2
+@test B ≈ B0/2 
+
+B = copy(B0); @inplace B = B/2
+@test B ≈ B0/2 
+
+B = copy(B0); @inplace B = 2\B
+@test B ≈ B0/2 
