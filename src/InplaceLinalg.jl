@@ -40,8 +40,9 @@ function inplace(expr::Expr)
         end
         ## fall through for other expressions with :=
     end
-    term1, term2 = terms(rhs)
+    term1, pm, term2 = terms(rhs)
     if ass == :(=) && term1 == 0 
+        pm == :- && ip_error("negated multiplicative update not available.")
         n, facs = multupdate(lhs, rhs)
         n > 0 && return :(InplaceLinalg.mult_update!($lhs, $(facs...), Val($n)))
     end
@@ -56,7 +57,8 @@ function inplace(expr::Expr)
     if ass in [:(+=), :(-=)]
         β = dobeta(Val{ass}, β)
         if ass == :(-=)
-            α = negate(α)
+            #α = negate(α)
+            pm = pm == :+ ? :- : :+
         end
         ass = :(=)
     end
@@ -65,7 +67,7 @@ function inplace(expr::Expr)
     isa(B, Symbol) || 
         isa(B, Expr) && B.head == Symbol("'") && isa(B.args[1], Symbol) || 
         return :(ip_error("Too complex expression for inplace"))
-    return :(InplaceLinalg.C_AB!($lhs, $β, $α, $A, $B))
+    return :(InplaceLinalg.C_AB!($lhs, $β, $pm, $α, $A, $B))
 end
 inplace(x) = x
 
@@ -87,13 +89,13 @@ function divupdate(lhs::Symbol, num::Expr)
 end
 
 function terms(expr::Expr)
-    if expr.head == :call && length(expr.args) == 3 && expr.args[1] == :+
-        return expr.args[2:3]
+    if expr.head == :call && length(expr.args) == 3 && expr.args[1] in (:+,:-)
+        return expr.args[[2,1,3]]
     else
-        return 0, expr
+        return 0, :+, expr
     end
 end
-terms(x) = 0, x
+terms(x) = 0, :+, x
 
 function multupdate(lhs::Symbol, rhs::Expr)
     if rhs.head == :call && length(rhs.args) ≤ 4 && rhs.args[1] == :* 
@@ -205,11 +207,11 @@ function reduce_factors(f...)
 end
 
 
-C_AB!(C, β, α, A, B) = add_update!(C, β, +, reduce_factors(α, A, B)...)
+C_AB!(C, β, pm, α, A, B) = add_update!(C, β, pm, reduce_factors(α, A, B)...)
 add_update!(C, β::Number, pm::Function) = add_update(C, β, pm, 1)
 
 #Do we want the following error behaviour, or do we just go ahead and do the broadcast?
-add_update!(C, ::Number, ::Function, ::Number) = ip_error("additive update, with scalar RHS not available. Use broadcasting instead.")
+add_update!(C, ::Number, ::Function, ::Number) = ip_error("additive update with scalar RHS not available. Use broadcasting instead.")
 
 
 include("div_update.jl")
