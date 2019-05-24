@@ -2,6 +2,13 @@ using LinearAlgebra
 using LinearAlgebra.BLAS: BlasFloat, BlasReal   # Union{Complex{Float32}, Complex{Float64}, Float32, Float64}
 using LinearAlgebra: checksquare, AbstractTriangular
 
+export BlasVector,BlasMatrix,BlasArray,
+       BlasTranspose, BlasAdjoint, 
+       BlasTransRow, BlasAdjRow, BlasRow,
+       BlasNode,
+       TransposeTriangular, AdjointTriangular, SimpleTriangular, TransformedTriangular, BlasTriangular
+
+
 BlasVector{T} = AbstractArray{T,1} where  T <: BlasFloat   
 BlasMatrix{T} = AbstractArray{T,2} where  T <: BlasFloat   
 BlasArray{T} = Union{BlasVector{T}, BlasMatrix{T}}
