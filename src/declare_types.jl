@@ -2,7 +2,8 @@ using LinearAlgebra
 using LinearAlgebra.BLAS: BlasFloat, BlasReal   # Union{Complex{Float32}, Complex{Float64}, Float32, Float64}
 using LinearAlgebra: checksquare, AbstractTriangular
 
-export BlasVector,BlasMatrix,BlasArray,
+export BlasFloat, BlasReal,
+       BlasVector,BlasMatrix,BlasArray,
        BlasTranspose, BlasAdjoint, 
        BlasTransRow, BlasAdjRow, BlasRow,
        BlasNode,
