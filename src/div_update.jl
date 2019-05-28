@@ -23,7 +23,7 @@ end
 for (div, side, fun) in ( ( :/, 'R', :(rdiv!(B,A)) ), 
                           ( :\, 'L', :(ldiv!(A,B)) ) )
     @eval begin  
-        function div_update!(B::BlasMatrix{T}, α::Number, ::typeof($div), A::SimpleTriangular{T}) where T
+        function div_update!(B::BlasMatrix{T}, α::Number, ::typeof($div), A::BlasTriangular{T}) where T
             try
                 α = convert(T,α)
                 BLAS.trsm!($side, A.uplo, A.trans, A.diag, α, A.blasnode, B)

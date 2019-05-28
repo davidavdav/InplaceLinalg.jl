@@ -7,7 +7,7 @@ export BlasFloat, BlasReal,
        BlasTranspose, BlasAdjoint, 
        BlasTransRow, BlasAdjRow, BlasRow,
        BlasNode,
-       TransposeTriangular, AdjointTriangular, SimpleTriangular, TransformedTriangular, BlasTriangular
+       TransposeTriangular, AdjointTriangular, BlasTriangular, TransformedTriangular, BlasTriangular
 
 
 BlasVector{T} = AbstractArray{T,1} where  T <: BlasFloat   
@@ -22,12 +22,15 @@ BlasRow{T} = Union{BlasTransRow{T}, BlasAdjRow{T}}
 
 BlasNode{T,N} = Union{Array{T,N}, SubArray{T,N}} where T <:BlasFloat #add more here if needed
 
-TransposeTriangular{T} = Transpose{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
-AdjointTriangular{T} = Adjoint{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
-SimpleTriangular{T} = Union{AbstractTriangular{T}, TransposeTriangular{T}, AdjointTriangular{T}} where T <: BlasFloat
-TransformedTriangular{T} = Union{TransposeTriangular{T}, AdjointTriangular{T}}
+TransposeTriangular{T,P} = Transpose{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
+AdjointTriangular{T,P} = Adjoint{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
+#BlasTriangular{T} = Union{AbstractTriangular{T}, TransposeTriangular{T}, AdjointTriangular{T}} where T <: BlasFloat
+TransformedTriangular{T,P} = Union{TransposeTriangular{T,P}, AdjointTriangular{T,P}}
 
 BlasTriangular{T} = Union{ AbstractTriangular{T}, TransformedTriangular{T} } where T <: BlasFloat 
+
+
+
 
 
 AxpyVec{T} = Union{DenseArray{T},AbstractVector{T}} where T <: BlasFloat
