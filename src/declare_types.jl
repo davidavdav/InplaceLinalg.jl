@@ -25,11 +25,9 @@ BlasNode{T,N} = Union{Array{T,N}, SubArray{T,N}} where T <:BlasFloat #add more h
 TransposeTriangular{T} = Transpose{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
 AdjointTriangular{T} = Adjoint{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
 SimpleTriangular{T} = Union{AbstractTriangular{T}, TransposeTriangular{T}, AdjointTriangular{T}} where T <: BlasFloat
-#InverseTriangular{T} = Inversion{P} where P <: SimpleTriangular{T} where T <: BlasFloat
-#TransformedTriangular{T} = Union{TransposeTriangular{T}, AdjointTriangular{T},InverseTriangular{T}}
 TransformedTriangular{T} = Union{TransposeTriangular{T}, AdjointTriangular{T}}
 
-BlasTriangular{T} = Union{AbstractTriangular{T}, TransformedTriangular{T}, UniformScaling{T}} where T <: BlasFloat 
+BlasTriangular{T} = Union{ AbstractTriangular{T}, TransformedTriangular{T} } where T <: BlasFloat 
 
 
 AxpyVec{T} = Union{DenseArray{T},AbstractVector{T}} where T <: BlasFloat
@@ -38,7 +36,6 @@ transposechar(::AbstractMatrix) = 'N'
 transposechar(::Transpose) = 'T'
 transposechar(::Adjoint{T}) where T <: Real = 'T'
 transposechar(::Adjoint{T}) where T <: Complex = 'C'
-#transposechar(T::InverseTriangular) = transposechar(parent(T))
 
 blasnode(M::BlasNode) = M  # it's here
 blasnode(M::TransformedTriangular) = blasnode(parent(M))  
@@ -57,8 +54,7 @@ diagchar(T::UpperTriangular) = 'N'
 diagchar(T::TransformedTriangular) = diagchar(parent(T))
 
 getparent(T::AbstractTriangular{F}) where F <: BlasFloat = parent(T)
-getparent(T::BlasTriangular) = getfield(T,:parent)
-getparent(T::UniformScaling) = getfield(T,:λ)
+getparent(T::BlasTriangular{F}) where F <: BlasFloat = getfield(T,:parent)
 
 
 Base.propertynames(T::BlasTriangular) = (:uplo, :diag, :trans, :parent, :blasnode, fieldnames(typeof(T))...)
@@ -71,5 +67,3 @@ Base.getproperty(T::BlasTriangular, p::Symbol) = p==:uplo     ? uplochar(T)     
 #
 
 
-#adj2tr(X) = X
-#adj2tr(X::Adjoint{T}) where T <: Real = transpose(parent(X))
