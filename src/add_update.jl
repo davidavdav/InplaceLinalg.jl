@@ -46,9 +46,9 @@ for (pm,sα) in ( (:+, :α), (:-, :(-α)) )
         end
     end
 end
-add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number) where T = 
-    add_update!(y::AxpyVec{T}, β::Number, pm::Function, α::Number, x::AxpyVec{T})
-#
+# add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}, α::Number) where T = 
+#     add_update!(y::AxpyVec{T}, β::Number, pm::Function, α::Number, x::AxpyVec{T})
+# #
 add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}) where T = 
     add_update!(y::AxpyVec{T}, β::Number, pm::Function, 1, x::AxpyVec{T})
 #
@@ -258,12 +258,12 @@ for (pm, sα, s) in ( (:+, :α, 1), (:-, :(-α), -1) )
         add_update!(C, β::Number, ::typeof($pm), α::Number, A, B) = 
             add_update0!(C, β, $sα, A, B) 
         #
-        add_update!(C, β::Number, ::typeof($pm), A, α::Number, B) = 
-            add_update0!(C, β, $sα, A, B) 
-        #
-        add_update!(C, β::Number, ::typeof($pm), A, B, α::Number) = 
-            add_update0!(C, β, $sα, A, B) 
-        #
+        # add_update!(C, β::Number, ::typeof($pm), A, α::Number, B) = 
+        #     add_update0!(C, β, $sα, A, B) 
+        # #
+        # add_update!(C, β::Number, ::typeof($pm), A, B, α::Number) = 
+        #     add_update0!(C, β, $sα, A, B) 
+        # #
 
         add_update!(C::BlasMatrix{T}, β::Number, ::typeof($pm), A::BlasArray{T}, B::BlasArray{T}) where T = 
             add_update0!(C, β, $s, A, B)
@@ -274,4 +274,5 @@ for (pm, sα, s) in ( (:+, :α, 1), (:-, :(-α), -1) )
 end
 
 
-
+#Do we want the following error behaviour, or do we just go ahead and do the broadcast?
+add_update!(C, ::Number, ::Function, ::Number) = ip_error("additive update with scalar RHS not available. Use broadcasting instead.")

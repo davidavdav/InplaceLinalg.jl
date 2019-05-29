@@ -194,24 +194,30 @@ include("extend_lmul_and_rmul.jl")
 
 #include("C_AB.jl")
 
-isnumber(x) = false
-isnumber(x::Number) = true
-function reduce_factors(f...)
-    ff = collect(f)
-    num = filter(isnumber,ff)
-    isempty(num) && return f
-    p = prod(num)
-    not_num = filter(!isnumber,ff)
-    p==1 && return tuple(not_num...)
-    return tuple(p, not_num...)
-end
+# isnumber(x) = false
+# isnumber(x::Number) = true
+# function reduce_factors(f...)
+#     ff = collect(f)
+#     num = filter(isnumber,ff)
+#     isempty(num) && return f
+#     p = prod(num)
+#     not_num = filter(!isnumber,ff)
+#     p==1 && return tuple(not_num...)
+#     return tuple(p, not_num...)
+# end
 
+reduce_factors(A, B, C) = (A,B,C)
+reduce_factors(A::Number, B, C) = A==1 ? (B,C) : (A,B,C) 
+reduce_factors(A, B::Number, C) = B==1 ? (A,C) : (B,A,C) 
+reduce_factors(A, B, C::Number) = C==1 ? (A,B) : (C,A,B) 
+reduce_factors(A::Number, B::Number, C::Number) = (A*B*C,)
+reduce_factors(A, B::Number, C::Number) = (P=B*C; P==1 ? (A,) : (P,A))
+reduce_factors(A::Number, B, C::Number) = (P=A*C; P==1 ? (B,) : (P,B))
+reduce_factors(A::Number, B::Number, C) = (P=A*B; P==1 ? (C,) : (P,C))
 
 C_AB!(C, β, pm, α, A, B) = add_update!(C, β, pm, reduce_factors(α, A, B)...)
-add_update!(C, β::Number, pm::Function) = add_update(C, β, pm, 1)
+#add_update!(C, β::Number, pm::Function) = add_update(C, β, pm, 1)
 
-#Do we want the following error behaviour, or do we just go ahead and do the broadcast?
-add_update!(C, ::Number, ::Function, ::Number) = ip_error("additive update with scalar RHS not available. Use broadcasting instead.")
 
 
 include("div_update.jl")
