@@ -293,6 +293,30 @@ y = copy(y0)
 @test y ≈ α*x 
 
 y = copy(y0)
+@inplace y = β*y + α*x
+@test y ≈ β*y0 + α*x 
+
+y = copy(y0)
+@inplace y += β*y + α*x
+@test y ≈ (1+β)*y0 + α*x 
+
+y = copy(y0)
+@inplace y -= β*y + α*x
+@test y ≈ (1-β)*y0 - α*x 
+
+y = copy(y0)
+@inplace y = β*y + x
+@test y ≈ β*y0 + x 
+
+y = copy(y0)
+@inplace y = β*y - α*x
+@test y ≈ β*y0 - α*x 
+
+y = copy(y0)
+@inplace y = β*y - x
+@test y ≈ β*y0 - x 
+
+y = copy(y0)
 @inplace y = 2x
 @test y ≈ 2x
 
@@ -300,6 +324,72 @@ y = copy(y0)
 @inplace y = x
 @test y == x 
 @test !(y === x) 
+
+
+# symmetric updates
+α = randn()
+β = randn()
+m = 3
+x = Symmetric(randn(m,m),:L)
+y = Symmetric(randn(m,m),:L)
+# x = LowerTriangular(randn(m,m))
+# y = LowerTriangular(randn(m,m))
+y0 = copy(y)
+
+y = copy(y0)
+@inplace y += x
+@test y ≈ x + y0
+
+y = copy(y0)
+@inplace y += 2x
+@test y ≈ 2x + y0
+
+y = copy(y0)
+@inplace y += α*x
+@test y ≈ α*x + y0
+
+y = copy(y0)
+@inplace y -= α*x
+@test y ≈ y0 - α*x 
+
+y = copy(y0)
+@inplace y = α*x
+@test y ≈ α*x 
+
+y = copy(y0)
+@inplace y = β*y + α*x
+@test y ≈ β*y0 + α*x 
+
+y = copy(y0)
+@inplace y += β*y + α*x
+@test y ≈ (1+β)*y0 + α*x 
+
+y = copy(y0)
+@inplace y -= β*y + α*x
+@test y ≈ (1-β)*y0 - α*x 
+
+y = copy(y0)
+@inplace y = β*y + x
+@test y ≈ β*y0 + x 
+
+y = copy(y0)
+@inplace y = β*y - α*x
+@test y ≈ β*y0 - α*x 
+
+y = copy(y0)
+@inplace y = β*y - x
+@test y ≈ β*y0 - x 
+
+y = copy(y0)
+@inplace y = 2x
+@test y ≈ 2x
+
+y = copy(y0)
+@inplace y = x
+@test y == x 
+@test !(y === x) 
+
+
 
 
 #test scalar multiplication and division

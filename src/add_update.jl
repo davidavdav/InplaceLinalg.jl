@@ -53,6 +53,99 @@ add_update!(y::AxpyVec{T}, β::Number, pm::Function, x::AxpyVec{T}) where T =
     add_update!(y::AxpyVec{T}, β::Number, pm::Function, 1, x::AxpyVec{T})
 #
 
+# Updating triangular and Symmetric matrices  =======================
+function add_update!(y::BlasTriangular{T}, β::Number, ::typeof(+), α::Number, x::BlasTriangular{T}) where T
+    uplo_eff(y) == uplo_eff(x) || ip_error("uplo must agree for additive triangular updates.")
+    try
+        if β==0
+           y .= α .* x
+        elseif β==1
+            y .+= α .* x
+        else
+            y .= β .* y .+ α .* x
+        end
+    catch err
+        ip_error(err)
+    end
+    return y
+end
+
+function add_update!(y::BlasTriangular{T}, β::Number, ::typeof(+), x::BlasTriangular{T}) where T
+    uplo_eff(y) == uplo_eff(x) || ip_error("uplo must agree for additive triangular updates.")
+    try
+        if β==0
+            y .= x
+        elseif β==1
+            y .+= x
+        else
+            y .= β .* y .+ x
+        end
+    catch err
+        ip_error(err)
+    end
+    return y
+end
+
+
+function add_update!(y::BlasTriangular{T}, β::Number, ::typeof(-), α::Number, x::BlasTriangular{T}) where T
+    uplo_eff(y) == uplo_eff(x) || ip_error("uplo must agree for additive triangular updates.")
+    try
+        if β==0
+           y .= α .* x
+        elseif β==1
+            y .-= α .* x
+        else
+            y .= β .* y .- α .* x
+        end
+    catch err
+        ip_error(err)
+    end
+    return y
+end
+
+function add_update!(y::BlasTriangular{T}, β::Number, ::typeof(-), x::BlasTriangular{T}) where T
+    uplo_eff(y) == uplo_eff(x) || ip_error("uplo must agree for additive triangular updates.")
+    try
+        if β==0
+            y .= x
+        elseif β==1
+            y .-= x
+        else
+            y .= β .* y .- x
+        end
+    catch err
+        ip_error(err)
+    end
+    return y
+end
+
+
+
+
+
+
+function add_update!(y::Symmetric{T}, β::Number, pm::Function, α::Number, x::Symmetric{T}) where T <: BlasFloat
+    if y.uplo=='L' && x.uplo=='L'
+        add_update!(LowerTriangular(parent(y)), β, pm, α, LowerTriangular(parent(x)))
+    elseif y.uplo=='U' && x.uplo=='U'
+        add_update!(UpperTriangular(parent(y)), β, pm, α, UpperTriangular(parent(x)))
+    else
+        ip_error("uplo must agree for additive Symmetric updates.")
+    end
+    return y
+end
+
+function add_update!(y::Symmetric{T}, β::Number, pm::Function, x::Symmetric{T}) where T <: BlasFloat
+    if y.uplo=='L' && x.uplo=='L'
+        add_update!(LowerTriangular(parent(y)), β, pm, LowerTriangular(parent(x)))
+    elseif y.uplo=='U' && x.uplo=='U'
+        add_update!(UpperTriangular(parent(y)), β, pm, UpperTriangular(parent(x)))
+    else
+        ip_error("uplo must agree for additive Symmetric updates.")
+    end
+    return y
+end
+
 
 # GEMV and SYMV =====================================================================================
 import LinearAlgebra: lmul!,rmul!

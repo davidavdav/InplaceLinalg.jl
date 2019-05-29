@@ -7,7 +7,8 @@ export BlasFloat, BlasReal,
        BlasTranspose, BlasAdjoint, 
        BlasTransRow, BlasAdjRow, BlasRow,
        BlasNode,
-       TransposeTriangular, AdjointTriangular, BlasTriangular, TransformedTriangular, BlasTriangular
+       TransposeTriangular, AdjointTriangular, BlasTriangular, TransformedTriangular,
+       uplo_eff, uplochar
 
 
 BlasVector{T} = AbstractArray{T,1} where  T <: BlasFloat   
@@ -24,7 +25,6 @@ BlasNode{T,N} = Union{Array{T,N}, SubArray{T,N}} where T <:BlasFloat #add more h
 
 TransposeTriangular{T,P} = Transpose{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
 AdjointTriangular{T,P} = Adjoint{T,P} where P <: AbstractTriangular{T} where T <: BlasFloat
-#BlasTriangular{T} = Union{AbstractTriangular{T}, TransposeTriangular{T}, AdjointTriangular{T}} where T <: BlasFloat
 TransformedTriangular{T,P} = Union{TransposeTriangular{T,P}, AdjointTriangular{T,P}}
 
 BlasTriangular{T} = Union{ AbstractTriangular{T}, TransformedTriangular{T} } where T <: BlasFloat 
@@ -49,6 +49,15 @@ uplochar(T::LowerTriangular) = 'L'
 uplochar(T::UnitUpperTriangular) = 'U'
 uplochar(T::UpperTriangular) = 'U'
 uplochar(T::TransformedTriangular) = uplochar(parent(T))
+
+uplo_eff(T::AbstractTriangular) = uplochar(T)
+function uplo_eff(T::TransformedTriangular) 
+    P = uplochar(parent(T)) 
+    P == 'L' && return 'U'
+    return 'L'
+end
+
+
 
 diagchar(T::UnitLowerTriangular) = 'U'
 diagchar(T::LowerTriangular) = 'N'
