@@ -250,6 +250,33 @@ add_update0!(C::Hermitian{T}, β::Number, α::Number, A::BlasVector{T}, B::BlasA
 #    
 
 
+function add_update!(C::BlasMatrix{T}, β::Number, ::typeof(+), α::Number, U::UniformScaling) where T
+    try
+        αλ,β = convert.(T, (α*U.λ,β))
+        n = checksquare(C)
+        if β==0
+            for i=1:n
+                @inbounds C[i,i] = αλ 
+            end
+        elseif β==1
+            for i=1:n
+                @inbounds C[i,i] += αλ 
+            end
+        else
+            for i=1:n
+                @inbounds C[i,i] = β*C[i,i] + αλ 
+            end
+        end
+        return C
+    catch err
+        ip_error(err)
+    end
+end
+add_update!(C::BlasMatrix, β::Number, ::typeof(-), α::Number, U::UniformScaling) = add_update!(C, β, +, -α, U) 
+add_update!(C::BlasMatrix, β::Number, ::typeof(+), U::UniformScaling) = add_update!(C, β, +, 1, U) 
+add_update!(C::BlasMatrix, β::Number, ::typeof(-), U::UniformScaling) = add_update!(C, β, +, -1, U) 
+
+
 
 add_update!(C, β, pm::Function, α, A, B) = ip_error("inplace assignment not available for this combination of types.")
 add_update0!(C, β::Number, α::Number, A, B) = ip_error("inplace assignment not available for this combination of types.")
