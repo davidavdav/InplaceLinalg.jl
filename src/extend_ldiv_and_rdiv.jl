@@ -7,8 +7,12 @@ ldiv!(U::UniformScaling, B::BlasArray) = lmul!(1 / U.λ, B)
 rdiv!(B::BlasArray, U::UniformScaling) = rmul!(B, 1 / U.λ)
 
 
-
-for (LoTr,UpTr) in ( (LowerTriangular, UpperTriangular) , (UpperTriangular, LowerTriangular) )
+# unwrap to-be-updated triangular numerators by sending ldiv! to !rdiv and vice-versa
+for (LoTr,UpTr) in ( (LowerTriangular, UpperTriangular), 
+                     (UpperTriangular, LowerTriangular),
+                     (UnitLowerTriangular, UnitUpperTriangular), 
+                     (UnitUpperTriangular, UnitLowerTriangular) 
+                   )
     for (tra,Tra) in ( (transpose,Transpose), (adjoint,Adjoint) )
         @eval begin
             ldiv!(L::$LoTr{T}, R::$Tra{T,<:$UpTr{T}}) where T = 
