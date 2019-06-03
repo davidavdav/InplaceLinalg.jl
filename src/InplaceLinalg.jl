@@ -7,6 +7,8 @@ export @inplace, InplaceException
 include("declare_types.jl")
 include("error_handling.jl")
 
+include("triangle_update.jl")
+
 
 macro inplace(x)
     try

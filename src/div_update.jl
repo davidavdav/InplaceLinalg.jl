@@ -1,7 +1,7 @@
 export div_update!
 
 """
-    div_upate
+    div_update!
 
 Inplace solve (left or right matrix divide). Usage:    
 
