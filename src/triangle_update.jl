@@ -53,17 +53,17 @@ end
 prepare_dest!(D) = D
 
 
-function wrap_dest(D::UnitLowerTriangular, F::BlasTriangular)
+function wrap_dest(D::UnitLowerTriangular, F::BlasTriangular, α::Number)
     uplo_eff(F) == 'L' || return parent(D)  # result is full square
-    F.diag == 'U' || return LowerTriangular(parent(D))  # result diagonal not unit  
+    (F.diag == 'U' && α == 1 ) || return LowerTriangular(parent(D))  # result diagonal not unit  
     return D # result still has unit diagonal
 end
-function wrap_dest(D::UnitUpperTriangular, F::BlasTriangular)
+function wrap_dest(D::UnitUpperTriangular, F::BlasTriangular, α::Number)
     uplo_eff(F) == 'U' || return parent(D)  # result is full square
-    F.diag == 'U' || return UpperTriangular(parent(D))  # result diagonal not unit  
+    (F.diag == 'U' && α == 1 )  || return UpperTriangular(parent(D))  # result diagonal not unit  
     return D # result still has unit diagonal
 end
-function wrap_dest(D::AbstractTriangular, F::BlasTriangular)
+function wrap_dest(D::AbstractTriangular, F::BlasTriangular, α::Number)
     uplo_eff(F) == uplo_eff(D) || return parent(D) # result is full square
     return D # result is still triangular
 end
@@ -81,7 +81,7 @@ for (fun,blasfun,side) in ( (:lmul!, :trmm!, 'L'),
             P = prepare_dest!(Dest)
             α = convert(T,α)
             $blasfun($side, F.uplo, F.trans, F.diag, α, F.blasnode, P)  
-            return wrap_dest(Dest,F)
+            return wrap_dest(Dest,F,α)
         end
     end
 end
@@ -96,7 +96,7 @@ for (tra,Tra) in ( (:transpose, :Transpose), (:adjoint, :Adjoint))
         @eval begin 
             function triangle_update!(D::$Tra{T,<:BlasMatrix{T}},
                                     F::BlasTriangular{T}, ::typeof($fwd),
-                                    α::Number=1.0) where T
+                                    α::Number=1.0) where T <: Real
                 $tra( triangle_update!($tra(D), $tra(F), $rev, α) )                                  
             end
         end

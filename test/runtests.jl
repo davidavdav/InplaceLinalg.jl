@@ -410,3 +410,6 @@ B = copy(B0); @inplace B = B/2
 
 B = copy(B0); @inplace B = 2\B
 @test B ≈ B0/2 
+
+
+include("triangle_tests.jl")
