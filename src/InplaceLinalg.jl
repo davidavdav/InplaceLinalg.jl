@@ -8,6 +8,7 @@ include("declare_types.jl")
 include("error_handling.jl")
 
 include("triangle_update.jl")
+include("loopy_triangle_updates.jl")
 
 
 macro inplace(x)

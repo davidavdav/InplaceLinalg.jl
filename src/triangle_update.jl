@@ -3,9 +3,9 @@ export triangle_update!
 function prepare_dest!(D::LowerTriangular{T}) where T 
     n = size(D,1)
     P = parent(D)
-    for j=2:n 
+    @inbounds for j=2:n 
         for i=1:j-1
-            @inbounds P[i,j] = zero(T)
+            P[i,j] = zero(T)
         end
     end
     return P
@@ -14,9 +14,9 @@ end
 function prepare_dest!(D::UpperTriangular{T}) where T 
     n = size(D,1)
     P = parent(D)
-    for j=1:n-1 
+    @inbounds for j=1:n-1 
         for i=j+1:n
-            @inbounds P[i,j] = zero(T)
+            P[i,j] = zero(T)
         end
     end
     return P
@@ -26,11 +26,11 @@ function prepare_dest!(D::UnitLowerTriangular{T}) where T
     n = size(D,1)
     P = parent(D)
     @inbounds P[1,1] = one(T)
-    for j=2:n 
+    @inbounds for j=2:n 
         for i=1:j-1
-            @inbounds P[i,j] = zero(T)
+            P[i,j] = zero(T)
         end
-        @inbounds P[j,j] = one(T)
+        P[j,j] = one(T)
     end
     return P
 end
@@ -40,10 +40,10 @@ end
 function prepare_dest!(D::UnitUpperTriangular{T}) where T 
     n = size(D,1)
     P = parent(D)
-    for j=1:n-1 
-        @inbounds P[j,j] = one(T)
+    @inbounds for j=1:n-1 
+        P[j,j] = one(T)
         for i=j+1:n
-            @inbounds P[i,j] = zero(T)
+            P[i,j] = zero(T)
         end
     end
     @inbounds P[n,n] = one(T)
@@ -102,3 +102,5 @@ for (tra,Tra) in ( (:transpose, :Transpose), (:adjoint, :Adjoint))
         end
     end
 end
+
+
