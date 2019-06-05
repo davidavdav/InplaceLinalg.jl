@@ -31,9 +31,12 @@ Some properties of the new methods are:
 
 - No clobbering of triangle parents outside of the intended triangle.
 
-- For L,R triangular and fun ∈ {rmul!, lmul!, ldiv!, rdiv!}: 
-      applicable(fun,L,R) && fun(L,R)
-  should not crash---except when sizes disagree, or when divisors are singular.   
+- For L,R triangular and fun! ∈ {rmul!, lmul!, ldiv!, rdiv!}: 
+      applicable(fun!,L,R) && fun!(L,R)
+  should not crash, except when 
+  -- sizes disagree, or 
+  -- when divisors are singular, or
+  -- when dividing matrices of integers (this should ideally be changed so that applicable returns false).    
 
 ==========================================================================# 
 
